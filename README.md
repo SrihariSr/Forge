@@ -17,7 +17,7 @@ Forge isn't a wrapper around existing libraries. It's a ground-up implementation
 - Reshape, transpose, and element-wise operations
 
 ### Automatic Differentiation
-- Automatic gradient computation — tracks operations as they happen and computes gradients by walking backwards through the computation, just like PyTorch
+- Automatic gradient computation tracks operations as they happen and computes gradients by walking backwards through the computation, just like PyTorch
 - Support for arbitrary compositions of differentiable operations
 - Numerical gradient verification using central finite differences
 - Custom `Function` API for user-defined differentiable operations
@@ -105,7 +105,7 @@ model = Sequential(
 )
 print(model)         # Shows 3 layers
 model.optimize()
-print(model)         # Shows 2 layers — Linear+ReLU fused
+print(model)         # Shows 2 layers: Linear+ReLU fused
 ```
 
 ### Train a Transformer
@@ -207,7 +207,7 @@ Building this framework from scratch taught me:
 - **How automatic differentiation works** at the implementation level; not just the math, but the graph construction, topological sorting, and gradient accumulation.
 - **Why numerical stability matters**: softmax overflow prevention, log(0) clamping, and why gradient checking requires float64.
 - **Optimizer dynamics**: how SGD momentum accelerates convergence, why Adam adapts per-parameter, and how learning rate affects training stability.
-- **Transformer internals**: how self-attention computes and propagates gradients through Queue/Key/Value projections, softmax, and residual connections.
+- **Transformer internals**: how self-attention computes and propagates gradients through Query/Key/Value projections, softmax, and residual connections.
 - **Compiler-level optimization**: how pattern matching on computation graphs enables operator fusion, and why this matters for performance.
 - **Training dynamics**: sensitivity to initialization, the disconnect between loss and generation quality, and the importance of early stopping.
 
