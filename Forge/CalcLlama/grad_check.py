@@ -1,8 +1,8 @@
 def grad_check(func, inputs, eps=1e-3, tol=1e-2):
-    
-    # Using first principles for differentiation: df/dx = lim(h->0) [f(x + h) - f(x - h)] / 2h
-    # We use a small value of h (eps) to approximate the limit.
-
+    """
+    Using first principles for differentiation: df/dx = lim(h->0) [f(x + h) - f(x - h)] / 2h
+    We use a small value of h to approximate the limit.
+    """
     for inp in inputs:
         inp.grad = None
 

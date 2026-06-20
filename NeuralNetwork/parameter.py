@@ -1,7 +1,7 @@
 from Forge.tensor import Tensor
 
 class Parameter(Tensor):
-    # A tensor that is automatically marked as requiring gradients
+    """A tensor that is automatically marked as requiring gradients"""
     
     def __init__(self, data):
         if isinstance(data, Tensor):

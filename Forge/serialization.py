@@ -2,7 +2,7 @@ import json
 import array as _array
 
 def save_model(model, filepath):
-    # Save a model's parameters to a file
+    """Save a model's parameters to a file"""
     state = model.state_dict()
 
     save_data = {}

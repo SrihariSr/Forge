@@ -1,5 +1,5 @@
 class Function:
-    # Base class for all differentiable operations.
+    """Base class for all differentiable operations"""
     def __init__(self):
         self.inputs = []
         self.saved_tensors = []

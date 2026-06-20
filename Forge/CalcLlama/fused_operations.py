@@ -4,7 +4,7 @@ from Forge.CalcLlama.engine import Function
 
 
 class FusedLinearReLU(Function):
-    # Fused matmul + bias add + ReLU in a single pass
+    """Fused matmul + bias add + ReLU in a single pass"""
 
     def forward(self, x, weight_t, bias):
         self.inputs = [x, weight_t, bias]

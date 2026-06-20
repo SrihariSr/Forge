@@ -2,7 +2,7 @@ from NeuralNetwork.parameter import Parameter
 
 
 class Module:
-    # Base class for all neural network modules.
+    """Base class for all neural network modules."""
 
     def __init__(self):
         self._Parameters = {}

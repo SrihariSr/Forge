@@ -8,7 +8,7 @@ import random
 import array as _array
 
 class Linear(Module):
-    # A fully connected layer: output = input @ weight.T + bias
+    """A fully connected layer: output = input @ weight.T + bias"""
 
     def __init__(self, in_features, out_features, bias=True):
         super().__init__()

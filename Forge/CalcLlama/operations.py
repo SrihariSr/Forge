@@ -3,7 +3,7 @@ import array as _array
 import math as _math
 
 def _unbroadcast(grad, original_shape):
-    # Sum grad along dimensions that were broadcast to match original_shape.
+    """Sum grad along dimensions that were broadcast to match original_shape."""
     from Forge.tensor import Tensor
     import array as _arr
 
