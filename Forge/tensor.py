@@ -435,3 +435,7 @@ class Tensor:
     def softmax(self):
         from Forge.CalcLlama.operations import Softmax
         return self._apply_op(Softmax)
+    
+    def select_batch(self, b):
+        from Forge.CalcLlama.operations import SelectBatch
+        return self._apply_op(SelectBatch, b)

@@ -661,3 +661,46 @@ class Softmax(Function):
         result._grad_fn = None
         return (result,)
 
+class SelectBatch(Function):
+    def forward(self, x, b):
+        self.inputs = [x]
+        self.b = b
+        self.x_shape = x.shape
+        self.x_dtype = x.dtype
+        from Forge.tensor import Tensor
+
+        batch, seq, dim = x.shape
+        start = b * seq * dim
+        end = (b + 1) * seq * dim
+        new_data = _array.array(x.dtype.typecode, x._data[start:end])
+
+        result = Tensor.__new__(Tensor)
+        result._data = new_data
+        result.shape = (seq, dim)
+        result.dtype = x.dtype
+        result.requires_grad = False
+        result.grad = None
+        result._grad_fn = None
+        
+        return result
+
+    def backward(self, grad_output):
+        from Forge.tensor import Tensor
+
+        batch, seq, dim = self.x_shape
+        total = batch * seq * dim
+        grad_data = _array.array(self.x_dtype.typecode, [0.0] * total)
+
+        start = self.b * seq * dim
+        for i in range(seq * dim):
+            grad_data[start + i] = grad_output._data[i]
+        
+        result = Tensor.__new__(Tensor)
+        result._data = grad_data
+        result.shape = self.x_shape
+        result.dtype = self.x_dtype
+        result.requires_grad = False
+        result.grad = None
+        result._grad_fn = None
+        
+        return (result,)

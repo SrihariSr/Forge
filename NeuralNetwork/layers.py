@@ -196,41 +196,25 @@ class SimpleAttention(Module):
         self.value = Linear(embed_dim, embed_dim)
 
     def forward(self, x):
-        batch_size = x.shape[0]
-        seq_len = x.shape[1]
+            batch_size = x.shape[0]
+            seq_len = x.shape[1]
 
-        results = []
+            results = []
 
-        for b in range(batch_size):
-            from Forge.tensor import Tensor
-            import array as _array
+            for b in range(batch_size):
+                x_2d = x.select_batch(b)
 
-            start = b * seq_len * self.embed_dim
-            end = (b + 1) * seq_len * self.embed_dim
-            batch_data = _array.array(
-                x.dtype.typecode,
-                x._data[start:end]
-            )
+                q = self.query(x_2d)
+                k = self.key(x_2d)
+                v = self.value(x_2d)
 
-            x_2d = Tensor.__new__(Tensor)
-            x_2d._data = batch_data
-            x_2d.shape = (seq_len, self.embed_dim)
-            x_2d.dtype = x.dtype
-            x_2d.requires_grad = x.requires_grad
-            x_2d.grad = None
-            x_2d._grad_fn = x._grad_fn
+                scores = (q @ k.T) * (1.0 / self.scale)
+                weights = scores.softmax()
+                output = weights @ v
 
-            q = self.query(x_2d)
-            k = self.key(x_2d)
-            v = self.value(x_2d)
+                results.append(output)
 
-            scores = (q @ k.T) * (1.0 / self.scale)
-            weights = scores.softmax()
-            output = weights @ v
-
-            results.append(output)
-
-        return results[0] if batch_size == 1 else results
+            return results[0] if batch_size == 1 else results
 
     def __repr__(self):
         return f"SimpleAttention (embed_dim={self.embed_dim})"
@@ -259,26 +243,9 @@ class TransformerBlock(Module):
         return output
     
     def _to_2d(self, x):
-        from Forge.tensor import Tensor
-        import array as _array
-
-        if len(x.shape) == 2:
-            return x
-
-        seq_len = x.shape[1]
-        embed_dim = x.shape[2]
-        batch_data = _array.array(
-            x.dtype.typecode,
-            x._data[0:seq_len * embed_dim]
-        )
-        result = Tensor.__new__(Tensor)
-        result._data = batch_data
-        result.shape = (seq_len, embed_dim)
-        result.dtype = x.dtype
-        result.requires_grad = x.requires_grad
-        result.grad = None
-        result._grad_fn = x._grad_fn
-        return result
+         if len(x.shape) == 2:
+             return x
+         return x.select_batch(0)
 
     def __repr__(self):
         return f"TransformerBlock(embed_dim={self.attention.embed_dim})"
