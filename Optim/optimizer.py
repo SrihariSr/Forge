@@ -2,7 +2,7 @@ import array as _array
 import math
 
 class Optimizer:
-    # Base class for all optimizers
+    """Base class for all optimizers."""
 
     # lr = learning rate
     def __init__(self, parameters, lr=0.01):
@@ -15,8 +15,6 @@ class Optimizer:
     def zero_grad(self):
         for param in self.parameters:
             param.grad = None
-
-
 
 class SGD(Optimizer):
     # Stochastic Gradient Descent

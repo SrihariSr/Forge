@@ -87,6 +87,12 @@ class Add(Function):
         grad_b = _unbroadcast(grad_output, b.shape)
         return grad_a, grad_b
 
+    def backward(self, grad_output):
+        a, b = self.saved_tensors
+        grad_a = _unbroadcast(grad_output, a.shape)
+        grad_b = _unbroadcast(grad_output, b.shape)
+        return grad_a, grad_b
+
 class Sub(Function):
     def forward(self, a, b):
         self.inputs = [a, b]
@@ -278,8 +284,6 @@ class Relu(Function):
         result._grad_fn = None
         return (result,)
 
-
-
 class Sigmoid(Function):
     def forward(self, a):
         self.inputs = [a]
@@ -310,7 +314,6 @@ class Sigmoid(Function):
         result._grad_fn = None
         return (result,)
 
-
 class Tanh(Function):
     def forward(self, a):
         self.inputs = [a]
@@ -340,7 +343,6 @@ class Tanh(Function):
         result._grad_fn = None
         return (result,)
 
-
 class Transpose(Function):
     def forward(self, a):
         self.inputs = [a]
@@ -365,40 +367,73 @@ class Transpose(Function):
         return (grad_output.transpose(),)
 
 class Matmul(Function):
-    def forward(self, a, b):
-        self.inputs = [a, b]
-        self.save_for_backward(a, b)
-        from Forge.tensor import Tensor
+    def forward(self, left, right):
+            # Save the operands so backward() can compute their gradients later.
+            self.inputs = [left, right]
+            self.save_for_backward(left, right)
 
-        if len(a.shape) != 2 or len(b.shape) != 2:
-            raise ValueError("matmul only supports 2D tensors")
+            from Forge.tensor import Tensor
+            from Forge.dtype import float32
+            from Forge.CalcLlama.mps_backend import MPS_AVAILABLE, mps_matmul, GPU_MIN_WORK
+            from Forge.CalcLlama.accelerate_backend import ACCELERATE_AVAILABLE, accelerate_matmul
 
-        if a.shape[1] != b.shape[0]:
-            raise ValueError(
-                f"matmul shape mismatch: ({a.shape[0]}, {a.shape[1]}) "
-                f"@ ({b.shape[0]}, {b.shape[1]})"
-            )
+            # Matmul only handles 2D matrices.
+            if len(left.shape) != 2 or len(right.shape) != 2:
+                raise ValueError("matmul only supports 2D tensors")
 
-        m = a.shape[0]
-        n = a.shape[1]
-        p = b.shape[1]
+            # For A @ B to be valid, A's column count must equal B's row count.
+            if left.shape[1] != right.shape[0]:
+                raise ValueError(
+                    f"matmul shape mismatch: ({left.shape[0]}, {left.shape[1]}) "
+                    f"@ ({right.shape[0]}, {right.shape[1]})"
+                )
 
-        new_data = _array.array(a.dtype.typecode, [])
-        for i in range(m):
-            for j in range(p):
-                total = 0.0
-                for k in range(n):
-                    total += a._data[i * n + k] * b._data[k * p + j]
-                new_data.append(total)
+            # Name the three dimensions of the multiplication:
+            #   the result is (left_rows x right_cols)
+            #   shared_dim is the inner dimension summed over (left cols == right rows)
+            left_rows  = left.shape[0]
+            shared_dim = left.shape[1]
+            right_cols = right.shape[1]
 
-        result = Tensor.__new__(Tensor)
-        result._data = new_data
-        result.shape = (m, p)
-        result.dtype = a.dtype
-        result.requires_grad = False
-        result.grad = None
-        result._grad_fn = None
-        return result
+            # Total multiply-add operations. Used to decide if the GPU is worthwhile.
+            total_work = left_rows * shared_dim * right_cols
+
+            # Both accelerated backends are single-precision, so they need float32.
+            both_float32 = left.dtype == float32 and right.dtype == float32
+
+            if both_float32 and MPS_AVAILABLE and total_work >= GPU_MIN_WORK:
+                # Large matrix: the GPU's throughput outweighs its per-call overhead.
+                result_data = mps_matmul(
+                    left._data, right._data, left_rows, shared_dim, right_cols
+                )
+
+            elif both_float32 and ACCELERATE_AVAILABLE:
+                # Smaller matrix: the CPU BLAS routine wins (almost no overhead).
+                result_data = accelerate_matmul(
+                    left._data, right._data, left_rows, shared_dim, right_cols
+                )
+
+            else:
+                # Fallback: no accelerated backend, or a non-float32 dtype.
+                # Compute every output element directly with a triple loop.
+                result_data = _array.array(left.dtype.typecode, [])
+                for row in range(left_rows):
+                    for col in range(right_cols):
+                        dot = 0.0
+                        # Sum left[row, s] * right[s, col] over the shared dimension.
+                        for s in range(shared_dim):
+                            dot += left._data[row * shared_dim + s] * right._data[s * right_cols + col]
+                        result_data.append(dot)
+
+            # Wrap the flat result back into a Tensor of shape (left_rows x right_cols).
+            result = Tensor.__new__(Tensor)
+            result._data = result_data
+            result.shape = (left_rows, right_cols)
+            result.dtype = left.dtype
+            result.requires_grad = False
+            result.grad = None
+            result._grad_fn = None
+            return result
 
     def backward(self, grad_output):
         a, b = self.saved_tensors

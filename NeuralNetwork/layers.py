@@ -52,8 +52,6 @@ class ReLULayer(Module):
     def __repr__(self):
         return "ReLU()"
 
-
-
 class FusedLinearReLULayer(Module):
     """Linear + ReLU fused into one operation for better performance."""
 
@@ -257,12 +255,19 @@ class CharTransformer(Module):
         self.seq_len = seq_len
 
         self.embedding = Embedding(vocab_size, embed_dim)
+
+        pos_data = [[random.uniform(-1.0, 1.0) for _ in range(embed_dim)] for _ in range(seq_len)]
+        self.pos_embedding = Parameter(Tensor(pos_data))
+
         self.transformer = TransformerBlock(embed_dim, ff_dim)
         self.output_proj = Linear(embed_dim, vocab_size)
     
     def forward(self, indices):
         # Embed characters
         x = self.embedding(indices)
+        
+        # Inject position embedding
+        x += self.pos_embedding
 
         # Transform
         x = self.transformer(x)
@@ -275,8 +280,8 @@ class CharTransformer(Module):
     def __repr__(self):
         return (
             f"CharTransformer(\n"
-            f"  embedding={self.embedding}\n"
-            f"  transformer={self.transformer}\n"
-            f"  output_proj={self.output_proj}\n"
+            f"embedding={self.embedding}\n"
+            f"transformer={self.transformer}\n"
+            f"output_proj={self.output_proj}\n"
             f")"
         )
