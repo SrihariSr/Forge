@@ -327,6 +327,14 @@ class Tensor:
         from Forge.CalcLlama.operations import Mean
         return self._apply_op(Mean)
 
+    def row_mean(self):
+        from Forge.CalcLlama.operations import RowMean
+        return self._apply_op(RowMean)
+
+    def sqrt(self):
+        from Forge.CalcLlama.operations import Sqrt
+        return self._apply_op(Sqrt)
+
     def matmul(self, other):
         from Forge.CalcLlama.operations import Matmul
         return self._apply_op(Matmul, other)
