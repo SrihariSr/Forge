@@ -108,7 +108,6 @@ for _ in range(20):
 
 print("Generated: " + "".join(generated))
 
-
 from Forge.serialization import save_model, load_model
 from NeuralNetwork.layers import CharTransformer
 

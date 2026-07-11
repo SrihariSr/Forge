@@ -287,7 +287,11 @@ class Tensor:
         return self._apply_op(Mul, other)
 
     def __truediv__(self, other):
-        return self._elementwise_op(other, lambda a, b: a / b)
+        # return self._elementwise_op(other, lambda a, b: a / b)
+        if isinstance(other, (int, float)):
+            other = Tensor(other, dtype=self.dtype)
+        
+        return self._apply_op(Mul, other ** -1)
 
     def __radd__(self, other):
         if isinstance(other, (int, float)):

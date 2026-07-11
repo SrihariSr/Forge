@@ -581,7 +581,6 @@ class Log(Function):
         result._grad_fn = None
         return (result,)
 
-
 class Clamp(Function):
     def forward(self, a, min_val, max_val):
         self.inputs = [a]
@@ -734,6 +733,97 @@ class SelectBatch(Function):
         result._data = grad_data
         result.shape = self.x_shape
         result.dtype = self.x_dtype
+        result.requires_grad = False
+        result.grad = None
+        result._grad_fn = None
+        
+        return (result,)
+
+class RowMean(Function):
+    """
+    Averages each row seperately.
+    """
+
+    def forward(self, x):
+        self.inputs = [x]
+        self.save_for_backward(x)
+        
+        from Forge.tensor import Tensor
+        rows, cols = x.shape
+
+        means = _array.array(x.dtype.typecode, [])
+        for r in range(rows):
+            total = 0.0
+            for c in range(cols):
+                total += x._data[r * cols + c]
+            means.append(total / cols)
+        
+        result = Tensor.__new__(Tensor)
+        result._data = means
+        result.shape = (rows, 1)
+        result.dtype = x.dtype
+        result.requires_grad = False
+        result.grad = None
+        result._grad_fn = None
+
+        return result
+    
+    def backward(self, grad_output):
+        x = self.saved_tensors[0]
+        
+        from Forge.tensor import Tensor
+        rows, cols = x.shape
+
+        grad_data = _array.array(x.dtype.typecode, [])
+        for r in range(rows):
+            share_of_grad = grad_output._data[r] / cols
+            for c in range(cols):
+                grad_data.append(share_of_grad)
+        
+        result = Tensor.__new__(Tensor)
+        result._data = grad_data
+        result.shape = x.shape
+        result.dtype = x.dtype
+        result.requires_grad = False
+        result.grad = None
+        result._grad_fn = None
+
+        return (result,)
+
+# Required to get standard deviation from variance
+class Sqrt(Function):
+    def forward(self, x):
+        self.inputs = [x]
+        from Forge.tensor import Tensor
+        import math
+        
+        new_data = _array.array(x.dtype.typecode, [math.sqrt(d) for d in x._data])
+
+        result = Tensor.__new__(Tensor)
+        result._data = new_data
+        result.shape = x.shape
+        result.dtype = x.dtype
+        result.requires_grad = False
+        result.grad = None
+        result._grad_fn = None
+
+        self.save_for_backward(result)
+        
+        return result
+
+    def backward(self, grad_output):
+        sqrt_x = self.saved_tensors[0]
+        from Forge.tensor import Tensor
+
+        grad_data = _array.array(
+            sqrt_x.dtype.typecode,
+            [g / (2.0 * s) for g, s in zip(grad_output._data, sqrt_x._data)]
+        )
+
+        result = Tensor.__new__(Tensor)
+        result._data = grad_data
+        result.shape = sqrt_x.shape
+        result.dtype = sqrt_x.dtype
         result.requires_grad = False
         result.grad = None
         result._grad_fn = None
