@@ -451,3 +451,12 @@ class Tensor:
     def select_batch(self, b):
         from Forge.CalcLlama.operations import SelectBatch
         return self._apply_op(SelectBatch, b)
+    
+    def causal_mask(self):
+        from Forge.CalcLlama.operations import CausalMask
+        return self._apply_op(CausalMask)
+
+    def concat_columns(self, *others):
+        from Forge.CalcLlama.operations import ConcatColumns
+        return self._apply_op(ConcatColumns, *others)
+        

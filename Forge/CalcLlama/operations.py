@@ -829,3 +829,116 @@ class Sqrt(Function):
         result._grad_fn = None
         
         return (result,)
+
+class CausalMask(Function):
+    def forward(self, scores):
+        self.inputs = [scores]
+        from Forge.tensor import Tensor
+
+        rows, cols = scores.shape
+        new_data = _array.array(scores.dtype.typecode, scores._data)
+
+        NEGINF = -1e50
+
+        for i in range(rows):
+            for j in range(cols):
+                if j > i:
+                    new_data[i * cols + j] = NEGINF
+
+        result = Tensor.__new__(Tensor)
+        result._data = new_data
+        result.shape = scores.shape
+        result.dtype = scores.dtype
+        result.requires_grad = False
+        result.grad = None
+        result._grad_fn = None
+
+        return result
+
+    def backward(self, grad_output):
+        from Forge.tensor import Tensor
+
+        rows, cols = grad_output.shape
+        grad_data = _array.array(grad_output.dtype.typecode, [0.0] * (rows * cols))
+
+        for i in range(rows):
+            for j in range(cols):
+                if j <= i:
+                    grad_data[i * cols + j] = grad_output._data[i * cols + j]
+
+        result = Tensor.__new__(Tensor)
+        result._data = grad_data
+        result.shape = grad_output.shape
+        result.dtype = grad_output.dtype
+        result.requires_grad = False
+        result.grad = None
+        result._grad_fn = None
+
+        return (result,)
+
+class ConcatColumns(Function):
+    """
+    Joins 2D tensors side by side: (rows, a) and (rows, b) -> (rows, a + b).
+    """
+
+    def forward(self, x, *others):
+        from Forge.tensor import Tensor
+
+        tensors = [x, *others]
+        self.inputs = list(tensors)
+
+        rows = x.shape[0]
+        for t in tensors:
+            if len(t.shape) != 2:
+                raise ValueError("concat_columns expects 2D tensors")
+            if t.shape[0] != rows:
+                raise ValueError(
+                    f"concat_columns needs matching row counts, got {rows} and {t.shape[0]}"
+                )
+
+        self.widths = [t.shape[1] for t in tensors]
+        total_cols = sum(self.widths)
+
+        new_data = _array.array(x.dtype.typecode, [0.0] * (rows * total_cols))
+
+        offset = 0
+        for t, width in zip(tensors, self.widths):
+            for i in range(rows):
+                for j in range(width):
+                    new_data[i * total_cols + offset + j] = t._data[i * width + j]
+            offset += width
+
+        result = Tensor.__new__(Tensor)
+        result._data = new_data
+        result.shape = (rows, total_cols)
+        result.dtype = x.dtype
+        result.requires_grad = False
+        result.grad = None
+        result._grad_fn = None
+
+        return result
+
+    def backward(self, grad_output):
+        from Forge.tensor import Tensor
+
+        rows, total_cols = grad_output.shape
+
+        grads = []
+        offset = 0
+        for width in self.widths:
+            grad_data = _array.array(grad_output.dtype.typecode, [0.0] * (rows * width))
+            for i in range(rows):
+                for j in range(width):
+                    grad_data[i * width + j] = grad_output._data[i * total_cols + offset + j]
+            offset += width
+
+            result = Tensor.__new__(Tensor)
+            result._data = grad_data
+            result.shape = (rows, width)
+            result.dtype = grad_output.dtype
+            result.requires_grad = False
+            result.grad = None
+            result._grad_fn = None
+            grads.append(result)
+
+        return tuple(grads)

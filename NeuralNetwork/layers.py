@@ -207,6 +207,7 @@ class SimpleAttention(Module):
                 v = self.value(x_2d)
 
                 scores = (q @ k.T) * (1.0 / self.scale)
+                scores = scores.causal_mask()
                 weights = scores.softmax()
                 output = weights @ v
 
@@ -307,3 +308,63 @@ class LayerNorm(Module):
     
     def __repr__(self):
         return f"LayerNorm(embed_dim={self.embed}, eps={self.eps})"
+
+class MultiHeadAttention(Module):
+    def __init__(self, embed_dim, num_heads):
+        super().__init__()
+        self.embed_dim = embed_dim
+        self.num_heads = num_heads
+        self.head_dim = embed_dim // num_heads
+        self.scale = self.head_dim ** 0.5
+        self.out_proj = Linear(embed_dim, embed_dim)
+
+        # Q, K, V values. Assigned one by one: Module only registers a Parameter or
+        # a Module, so heads held in a plain list would never reach parameters().
+        for n in range(num_heads):
+            setattr(self, f"query_{n}", Linear(embed_dim, self.head_dim))
+            setattr(self, f"key_{n}", Linear(embed_dim, self.head_dim))
+            setattr(self, f"value_{n}", Linear(embed_dim, self.head_dim))
+
+    def query(self, n):
+        return getattr(self, f"query_{n}")
+
+    def key(self, n):
+        return getattr(self, f"key_{n}")
+
+    def value(self, n):
+        return getattr(self, f"value_{n}")
+
+        for n in range(num_heads):
+            setattr(self, f"query_{n}", self.queries[n])
+            setattr(self, f"key{n}", self.keys[n])
+            setattr(self, f"value_{n}", self.values[n])
+    def forward(self, x):
+        batch_size = x.shape[0]
+        results = []
+
+        for b in range(batch_size):
+            x_2d = x.select_batch(b)
+
+            head_outputs = []
+            for n in range(self.num_heads):
+                q = self.query(n)(x_2d)
+                k = self.key(n)(x_2d)
+                v = self.value(n)(x_2d)
+
+                # How much should each position attend to each other position
+                scores = (q @ k.T) / self.scale
+
+                # Masking every position after it
+                scores = scores.causal_mask()
+
+                weights = scores.softmax()
+                head_outputs.append(weights @ v)
+
+            combined = head_outputs[0].concat_columns(*head_outputs[1:])
+            results.append(self.out_proj(combined))
+
+        return results[0] if batch_size == 1 else results
+        
+    def __repr__(self):
+        return (f"MultiHeadAttention(embed_dim={self.embed_dim})\nnum_heads={self.num_heads}\nhead_dim={self.head_dim}")
+        
