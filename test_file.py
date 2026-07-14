@@ -1,17 +1,17 @@
 import sys; sys.path.insert(0, ".")
-import random
 from Forge import Tensor
-from Forge.dtype import float32, float64
-from Forge.CalcLlama.accelerate_backend import ACCELERATE_AVAILABLE
+from Forge.dtype import float64
 from Forge.CalcLlama import grad_check
+from NeuralNetwork.layers import LayerNorm
 
-print("ACCELERATE_AVAILABLE:", ACCELERATE_AVAILABLE)   # expect True on your Mac
+print("division grad_check:", grad_check(
+    lambda t: (t / Tensor([2., 4.], dtype=float64)).sum(),
+    [Tensor([4., 9.], dtype=float64, requires_grad=True)]))
 
-# correctness: float32 (BLAS) vs float64 (loop)
-random.seed(0); M,K,N = 16,20,12
-a=[random.uniform(-1,1) for _ in range(M*K)]; b=[random.uniform(-1,1) for _ in range(K*N)]
-f32=(Tensor([a[i*K:(i+1)*K] for i in range(M)],dtype=float32)@Tensor([b[i*N:(i+1)*N] for i in range(K)],dtype=float32))._data
-f64=(Tensor([a[i*K:(i+1)*K] for i in range(M)],dtype=float64)@Tensor([b[i*N:(i+1)*N] for i in range(K)],dtype=float64))._data
-print("max rel err:", f"{max(abs(x-y)/(abs(y)+1e-9) for x,y in zip(f32,f64)):.2e}")
-print("grad_check:", grad_check(lambda t:(t@Tensor([[1.,0.],[0.,1.]],dtype=float64)).sum(),
-                                [Tensor([[1.,2.],[3.,4.]],dtype=float64,requires_grad=True)]))
+ln = LayerNorm(4)
+out = ln(Tensor([[1., 2., 3., 4.], [10., 12., 14., 16.]]))
+row = [out._data[c] for c in range(4)]
+mean = sum(row) / 4
+std = (sum((v - mean) ** 2 for v in row) / 4) ** 0.5
+print(f"row 0 -> mean {mean:+.6f} (expect ~0), std {std:.6f} (expect ~1)")
+print("layernorm params:", len(list(ln.parameters())), "(expect 2)")

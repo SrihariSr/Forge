@@ -282,6 +282,28 @@ class CharTransformer(Module):
             f"CharTransformer(\n"
             f"embedding={self.embedding}\n"
             f"transformer={self.transformer}\n"
-            f"output_proj={self.output_proj}\n"
-            f")"
-        )
+            f"output_proj={self.output_proj}\n")
+
+class LayerNorm(Module):
+    """
+    Rescales a row of numbers such that the mean = 0 and standard deviation = 1
+    to ensure numerical stability.
+    """
+    def __init__(self, embed_dim, eps=1e-5):
+        super().__init__()
+        self.embed_dim = embed_dim
+        self.eps = eps
+        self.gain = Parameter(Tensor([[1.0] * embed_dim]))
+        self.bias = Parameter(Tensor([[0.0] * embed_dim]))
+    
+    def forward(self, x):
+        mean = x.row_mean()
+        centred = x - mean
+        variance = (centred ** 2).row_mean()
+        std = (variance + self.eps).sqrt()
+        normalised = centred / std
+
+        return (self.gain * normalised) + self.bias
+    
+    def __repr__(self):
+        return f"LayerNorm(embed_dim={self.embed}, eps={self.eps})"
