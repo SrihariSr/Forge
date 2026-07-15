@@ -942,3 +942,80 @@ class ConcatColumns(Function):
             grads.append(result)
 
         return tuple(grads)
+    
+class Gelu(Function):
+    """
+    gelu(x) = 0.5 * x * (1 + tanh(sqrt(2/pi) * (x + 0.044715 * x^3)))
+    """
+    def forward(self, x):
+        self.inputs = [x]
+        self.save_for_backward(x)
+        from Forge.tensor import Tensor
+        import math
+        
+        c = math.sqrt(2.0 / math.pi)
+        new_data = _array.array(x.dtype.typecode, [])
+        for d in x._data:
+            inner = c * (d + 0.044715 * d**3)
+            new_data.append(0.5 * d * (1.0 + math.tanh(inner)))
+
+        result = Tensor.__new__(Tensor)
+        result._data = new_data
+        result.shape = x.shape
+        result.dtype = x.dtype
+        result.requires_grad = False
+        result.grad = None
+        result._grad_fn = None
+        return result
+
+    def backward(self, grad_output):
+        x = self.saved_tensors[0]
+        from Forge.tensor import Tensor
+        import math
+
+        c = math.sqrt(2.0 / math.pi)
+        grad_data = _array.array(x.dtype.typecode, [])
+        for g, v in zip(grad_output._data, x._data):
+            inner = c * (v + 0.044715 * v ** 3)
+            t = math.tanh(inner)
+            d_inner = c * (1.0 + 3.0 * 0.044715 * v * v)
+            local = 0.5 * (1.0 + t) + 0.5 * v * (1.0 - t * t) * d_inner
+            grad_data.append(g * local)
+
+        result = Tensor.__new__(Tensor)
+        result._data = grad_data
+        result.shape = x.shape
+        result.dtype = x.dtype
+        result.requires_grad = False
+        result.grad = None
+        result._grad_fn = None
+        return (result,)
+
+class UnsqueezeBatch(Function):
+    """
+    Turns a (rows, cols) tensor into (1, rows, cols) tensor.
+    """
+    def forward(self, x):
+        self.inputs = [x]
+        self.x_shape = x.shape
+        from Forge.tensor import Tensor
+
+        result = Tensor.__new__(Tensor)
+        result._data = _array.array(x.dtype.typecode, x._data)
+        result.shape = (1, x.shape[0], x.shape[1])
+        result.dtype = x.dtype
+        result.requires_grad = False
+        result.grad = None
+        result._grad_fn = None
+        return result
+
+    def backward(self, grad_output):
+        from Forge.tensor import Tensor
+        result = Tensor.__new__(Tensor)
+        result._data = _array.array(grad_output.dtype.typecode, grad_output._data)
+        result.shape = self.x_shape
+        result.dtype = grad_output.dtype
+        result.requires_grad = False
+        result.grad = None
+        result._grad_fn = None
+        return (result,)

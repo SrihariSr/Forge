@@ -460,3 +460,10 @@ class Tensor:
         from Forge.CalcLlama.operations import ConcatColumns
         return self._apply_op(ConcatColumns, *others)
         
+    def gelu(self):
+        from Forge.CalcLlama.operations import Gelu
+        return self._apply_op(Gelu)
+    
+    def unsqueeze_batch(self):
+        from Forge.CalcLlama.operations import UnsqueezeBatch
+        return self._apply_op(UnsqueezeBatch)

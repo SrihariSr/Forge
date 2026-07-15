@@ -367,4 +367,78 @@ class MultiHeadAttention(Module):
         
     def __repr__(self):
         return (f"MultiHeadAttention(embed_dim={self.embed_dim})\nnum_heads={self.num_heads}\nhead_dim={self.head_dim}")
+
+class GPTBlock(Module):
+    def __init__(self, embed_dim, num_heads, ff_dim):
+        super().__init__()
+        self.norm1 = LayerNorm(embed_dim)
+        self.norm2 = LayerNorm(embed_dim)
+        self.attention = MultiHeadAttention(embed_dim, num_heads)
+        self.ff1 = Linear(embed_dim, ff_dim)
+        self.ff2 = Linear(ff_dim, embed_dim)
+
+    def forward(self, x_2d):
+        # Attention sub-layer
+        normed = self.norm1(x_2d)
+        attended = self.attention(normed.unsqueeze_batch())
+        x_2d += attended # Residual
+
+        # Feed-forward sub-layer
+        normed = self.norm2(x_2d)
+        ff_out = self.ff2(self.ff1(normed).gelu())
+        x_2d += ff_out
+
+        return x_2d
+
+        def __repr__(self):
+            return f"GPTBlock(embd_dim={self.attention.embed_dim}), heads={self.attention.num_heads}"
+        
+class GPT(Module):
+    """
+    A small decoder-only transformer.
+    """
+    def __init__(self,
+    vocab_size,
+    embed_dim,
+    num_heads,
+    ff_dim,
+    num_layers,
+    seq_len):
+        super().__init__()
+        self.vocab_size = vocab_size
+        self.embed_dim = embed_dim
+        self.num_layers = num_layers
+        self.seq_len = seq_len
+
+        # Token embedding
+        self.embedding = Embedding(vocab_size, embed_dim)
+
+        # Learned positional encoding
+        pos_data = [[[random.uniform(-0.02, 0.02) for _ in range(embed_dim)] for _ in range(seq_len)]]
+        self.pos_embedding = Parameter(Tensor(pos_data))
+
+        # Stacking the GPT blocks together
+        self.blocks = [GPTBlock(embed_dim, num_heads, ff_dim) for _ in range(num_layers)]
+        for i, block in enumerate(self.blocks):
+            setattr(self, f"block_{i}", block)
+        # Final normalisation
+        self.norm_final = LayerNorm(embed_dim)
+
+        # Project back to one score ("logit") per vocabulary entry
+        self.output_proj = Linear(embed_dim, vocab_size)
+    
+    def forward(self, indices):
+        x = self.embedding(indices)
+        x = x + self.pos_embedding # Inject position info
+        x = x.select_batch(0) # Drop to 2D for the blocks
+
+        for block in self.blocks:
+            x = block(x)
+        
+        x = self.norm_final(x)
+        logits = self.output_proj(x)
+        return logits
+
+        def __repr__(self):
+            return f"GPT(vocab={self.vocab_size}, embed={self.embed_dim}, layers={self.num_layers}, seq_len={self.seq_len})"
         

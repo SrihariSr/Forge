@@ -1,0 +1,984 @@
+resuming from checkpoint at step 25000
+corpus: 1,115,394 chars, vocab 65
+will train for 2.0 hours with 8 workers
+
+training...
+
+step  25010 | loss  1.453 | 119.9 min left
+step  25020 | loss  1.486 | 119.7 min left
+step  25030 | loss  1.460 | 119.6 min left
+step  25040 | loss  1.467 | 119.5 min left
+step  25050 | loss  1.490 | 119.3 min left
+step  25060 | loss  1.512 | 119.2 min left
+step  25070 | loss  1.495 | 119.0 min left
+step  25080 | loss  1.475 | 118.9 min left
+step  25090 | loss  1.451 | 118.7 min left
+step  25100 | loss  1.488 | 118.6 min left
+step  25110 | loss  1.453 | 118.5 min left
+step  25120 | loss  1.482 | 118.3 min left
+step  25130 | loss  1.463 | 118.2 min left
+step  25140 | loss  1.451 | 118.0 min left
+step  25150 | loss  1.430 | 117.9 min left
+step  25160 | loss  1.477 | 117.7 min left
+step  25170 | loss  1.470 | 117.5 min left
+step  25180 | loss  1.469 | 117.3 min left
+step  25190 | loss  1.472 | 117.2 min left
+step  25200 | loss  1.454 | 117.0 min left
+step  25210 | loss  1.488 | 116.8 min left
+step  25220 | loss  1.496 | 116.6 min left
+step  25230 | loss  1.513 | 116.4 min left
+step  25240 | loss  1.461 | 116.2 min left
+step  25250 | loss  1.448 | 116.1 min left
+step  25260 | loss  1.458 | 115.9 min left
+step  25270 | loss  1.461 | 115.7 min left
+step  25280 | loss  1.477 | 115.6 min left
+step  25290 | loss  1.448 | 115.4 min left
+step  25300 | loss  1.470 | 115.2 min left
+step  25310 | loss  1.502 | 115.1 min left
+step  25320 | loss  1.512 | 114.9 min left
+step  25330 | loss  1.498 | 114.7 min left
+step  25340 | loss  1.493 | 114.6 min left
+step  25350 | loss  1.491 | 114.4 min left
+step  25360 | loss  1.512 | 114.3 min left
+step  25370 | loss  1.471 | 114.2 min left
+step  25380 | loss  1.443 | 114.0 min left
+step  25390 | loss  1.432 | 113.9 min left
+step  25400 | loss  1.483 | 113.7 min left
+step  25410 | loss  1.480 | 113.6 min left
+step  25420 | loss  1.422 | 113.4 min left
+step  25430 | loss  1.425 | 113.3 min left
+step  25440 | loss  1.456 | 113.2 min left
+step  25450 | loss  1.513 | 113.0 min left
+step  25460 | loss  1.474 | 112.9 min left
+step  25470 | loss  1.461 | 112.8 min left
+step  25480 | loss  1.468 | 112.6 min left
+step  25490 | loss  1.463 | 112.5 min left
+step  25500 | loss  1.499 | 112.3 min left
+step  25510 | loss  1.466 | 112.2 min left
+step  25520 | loss  1.431 | 112.1 min left
+step  25530 | loss  1.455 | 111.9 min left
+step  25540 | loss  1.505 | 111.8 min left
+step  25550 | loss  1.457 | 111.6 min left
+step  25560 | loss  1.495 | 111.5 min left
+step  25570 | loss  1.507 | 111.4 min left
+step  25580 | loss  1.540 | 111.2 min left
+step  25590 | loss  1.494 | 111.1 min left
+step  25600 | loss  1.491 | 111.0 min left
+step  25610 | loss  1.491 | 110.8 min left
+step  25620 | loss  1.514 | 110.7 min left
+step  25630 | loss  1.489 | 110.5 min left
+step  25640 | loss  1.470 | 110.4 min left
+step  25650 | loss  1.491 | 110.3 min left
+step  25660 | loss  1.512 | 110.1 min left
+step  25670 | loss  1.518 | 110.0 min left
+step  25680 | loss  1.438 | 109.9 min left
+step  25690 | loss  1.450 | 109.7 min left
+step  25700 | loss  1.479 | 109.6 min left
+step  25710 | loss  1.460 | 109.4 min left
+step  25720 | loss  1.460 | 109.3 min left
+step  25730 | loss  1.483 | 109.2 min left
+step  25740 | loss  1.467 | 109.0 min left
+step  25750 | loss  1.484 | 108.9 min left
+step  25760 | loss  1.502 | 108.7 min left
+step  25770 | loss  1.530 | 108.6 min left
+step  25780 | loss  1.522 | 108.5 min left
+step  25790 | loss  1.477 | 108.3 min left
+step  25800 | loss  1.424 | 108.2 min left
+step  25810 | loss  1.461 | 108.1 min left
+step  25820 | loss  1.473 | 107.9 min left
+step  25830 | loss  1.485 | 107.8 min left
+step  25840 | loss  1.513 | 107.6 min left
+step  25850 | loss  1.487 | 107.5 min left
+step  25860 | loss  1.476 | 107.4 min left
+step  25870 | loss  1.485 | 107.2 min left
+step  25880 | loss  1.475 | 107.1 min left
+step  25890 | loss  1.500 | 106.9 min left
+step  25900 | loss  1.454 | 106.8 min left
+step  25910 | loss  1.470 | 106.7 min left
+step  25920 | loss  1.472 | 106.5 min left
+step  25930 | loss  1.443 | 106.4 min left
+step  25940 | loss  1.438 | 106.2 min left
+step  25950 | loss  1.448 | 106.1 min left
+step  25960 | loss  1.454 | 106.0 min left
+step  25970 | loss  1.448 | 105.8 min left
+step  25980 | loss  1.499 | 105.7 min left
+step  25990 | loss  1.476 | 105.5 min left
+step  26000 | loss  1.476 | 105.4 min left
+
+--- sample ---
+PETRUCHIO:
+Rome, my lord, and good that should in thee see greed live; here is the sunge.
+
+GLOUCESTER:
+Mill I do do my
+good wear Ancio canst coomes leave the eye look.
+
+EXETER:
+But was my sort, be sures to your sore.
+Good look, or, call your voicess,
+And I say hear still the brought give the bastard
+--- end ---
+
+step  26010 | loss  1.451 | 104.6 min left
+step  26020 | loss  1.476 | 104.4 min left
+step  26030 | loss  1.499 | 104.3 min left
+step  26040 | loss  1.470 | 104.2 min left
+step  26050 | loss  1.485 | 104.0 min left
+step  26060 | loss  1.477 | 103.9 min left
+step  26070 | loss  1.434 | 103.8 min left
+step  26080 | loss  1.465 | 103.6 min left
+step  26090 | loss  1.470 | 103.5 min left
+step  26100 | loss  1.461 | 103.4 min left
+step  26110 | loss  1.450 | 103.2 min left
+step  26120 | loss  1.443 | 103.1 min left
+step  26130 | loss  1.447 | 102.9 min left
+step  26140 | loss  1.472 | 102.8 min left
+step  26150 | loss  1.471 | 102.7 min left
+step  26160 | loss  1.485 | 102.5 min left
+step  26170 | loss  1.443 | 102.4 min left
+step  26180 | loss  1.484 | 102.3 min left
+step  26190 | loss  1.480 | 102.1 min left
+step  26200 | loss  1.472 | 102.0 min left
+step  26210 | loss  1.455 | 101.9 min left
+step  26220 | loss  1.468 | 101.7 min left
+step  26230 | loss  1.434 | 101.6 min left
+step  26240 | loss  1.466 | 101.5 min left
+step  26250 | loss  1.483 | 101.3 min left
+step  26260 | loss  1.479 | 101.2 min left
+step  26270 | loss  1.476 | 101.1 min left
+step  26280 | loss  1.511 | 100.9 min left
+step  26290 | loss  1.510 | 100.8 min left
+step  26300 | loss  1.456 | 100.7 min left
+step  26310 | loss  1.485 | 100.5 min left
+step  26320 | loss  1.448 | 100.4 min left
+step  26330 | loss  1.469 | 100.3 min left
+step  26340 | loss  1.488 | 100.1 min left
+step  26350 | loss  1.475 | 100.0 min left
+step  26360 | loss  1.493 |  99.9 min left
+step  26370 | loss  1.432 |  99.7 min left
+step  26380 | loss  1.464 |  99.6 min left
+step  26390 | loss  1.501 |  99.5 min left
+step  26400 | loss  1.451 |  99.3 min left
+step  26410 | loss  1.465 |  99.2 min left
+step  26420 | loss  1.528 |  99.1 min left
+step  26430 | loss  1.476 |  98.9 min left
+step  26440 | loss  1.441 |  98.8 min left
+step  26450 | loss  1.473 |  98.6 min left
+step  26460 | loss  1.493 |  98.5 min left
+step  26470 | loss  1.456 |  98.4 min left
+step  26480 | loss  1.437 |  98.2 min left
+step  26490 | loss  1.441 |  98.1 min left
+step  26500 | loss  1.472 |  98.0 min left
+step  26510 | loss  1.436 |  97.8 min left
+step  26520 | loss  1.465 |  97.7 min left
+step  26530 | loss  1.471 |  97.5 min left
+step  26540 | loss  1.456 |  97.4 min left
+step  26550 | loss  1.500 |  97.2 min left
+step  26560 | loss  1.469 |  97.1 min left
+step  26570 | loss  1.486 |  96.9 min left
+step  26580 | loss  1.492 |  96.8 min left
+step  26590 | loss  1.481 |  96.7 min left
+step  26600 | loss  1.462 |  96.5 min left
+step  26610 | loss  1.469 |  96.4 min left
+step  26620 | loss  1.462 |  96.2 min left
+step  26630 | loss  1.435 |  96.1 min left
+step  26640 | loss  1.462 |  96.0 min left
+step  26650 | loss  1.477 |  95.8 min left
+step  26660 | loss  1.468 |  95.7 min left
+step  26670 | loss  1.452 |  95.5 min left
+step  26680 | loss  1.484 |  95.4 min left
+step  26690 | loss  1.501 |  95.2 min left
+step  26700 | loss  1.491 |  95.1 min left
+step  26710 | loss  1.476 |  95.0 min left
+step  26720 | loss  1.467 |  94.8 min left
+step  26730 | loss  1.449 |  94.7 min left
+step  26740 | loss  1.430 |  94.5 min left
+step  26750 | loss  1.469 |  94.4 min left
+step  26760 | loss  1.489 |  94.2 min left
+step  26770 | loss  1.514 |  94.1 min left
+step  26780 | loss  1.477 |  94.0 min left
+step  26790 | loss  1.470 |  93.8 min left
+step  26800 | loss  1.462 |  93.7 min left
+step  26810 | loss  1.503 |  93.5 min left
+step  26820 | loss  1.503 |  93.4 min left
+step  26830 | loss  1.487 |  93.3 min left
+step  26840 | loss  1.469 |  93.1 min left
+step  26850 | loss  1.472 |  93.0 min left
+step  26860 | loss  1.469 |  92.8 min left
+step  26870 | loss  1.482 |  92.7 min left
+step  26880 | loss  1.455 |  92.5 min left
+step  26890 | loss  1.482 |  92.4 min left
+step  26900 | loss  1.461 |  92.3 min left
+step  26910 | loss  1.536 |  92.1 min left
+step  26920 | loss  1.482 |  92.0 min left
+step  26930 | loss  1.452 |  91.8 min left
+step  26940 | loss  1.456 |  91.7 min left
+step  26950 | loss  1.462 |  91.6 min left
+step  26960 | loss  1.462 |  91.4 min left
+step  26970 | loss  1.503 |  91.3 min left
+step  26980 | loss  1.482 |  91.1 min left
+step  26990 | loss  1.479 |  91.0 min left
+step  27000 | loss  1.453 |  90.9 min left
+
+--- sample ---
+KING RICHARD III:
+Come them, where this weak of my dispiter.
+
+GREN:
+I prile thee, but remembray his need?
+
+MENENIUS:
+I will so foole: the souls, drinking?
+
+DUKE OF YORK:
+Lord me, became as the bond! then with the light of the virtuous before you,
+As this time at the wind hath the wings,
+Whose limedg
+--- end ---
+
+step  27010 | loss  1.467 |  90.0 min left
+step  27020 | loss  1.458 |  89.9 min left
+step  27030 | loss  1.463 |  89.8 min left
+step  27040 | loss  1.455 |  89.6 min left
+step  27050 | loss  1.474 |  89.5 min left
+step  27060 | loss  1.507 |  89.3 min left
+step  27070 | loss  1.478 |  89.2 min left
+step  27080 | loss  1.437 |  89.1 min left
+step  27090 | loss  1.491 |  88.9 min left
+step  27100 | loss  1.454 |  88.8 min left
+step  27110 | loss  1.485 |  88.7 min left
+step  27120 | loss  1.449 |  88.5 min left
+step  27130 | loss  1.462 |  88.4 min left
+step  27140 | loss  1.465 |  88.3 min left
+step  27150 | loss  1.419 |  88.1 min left
+step  27160 | loss  1.452 |  88.0 min left
+step  27170 | loss  1.427 |  87.9 min left
+step  27180 | loss  1.496 |  87.7 min left
+step  27190 | loss  1.488 |  87.6 min left
+step  27200 | loss  1.487 |  87.4 min left
+step  27210 | loss  1.450 |  87.3 min left
+step  27220 | loss  1.442 |  87.2 min left
+step  27230 | loss  1.473 |  87.0 min left
+step  27240 | loss  1.469 |  86.9 min left
+step  27250 | loss  1.504 |  86.8 min left
+step  27260 | loss  1.488 |  86.6 min left
+step  27270 | loss  1.464 |  86.5 min left
+step  27280 | loss  1.491 |  86.4 min left
+step  27290 | loss  1.449 |  86.2 min left
+step  27300 | loss  1.448 |  86.1 min left
+step  27310 | loss  1.443 |  86.0 min left
+step  27320 | loss  1.502 |  85.8 min left
+step  27330 | loss  1.470 |  85.7 min left
+step  27340 | loss  1.462 |  85.5 min left
+step  27350 | loss  1.426 |  85.4 min left
+step  27360 | loss  1.436 |  85.3 min left
+step  27370 | loss  1.488 |  85.1 min left
+step  27380 | loss  1.451 |  85.0 min left
+step  27390 | loss  1.410 |  84.9 min left
+step  27400 | loss  1.435 |  84.7 min left
+step  27410 | loss  1.470 |  84.6 min left
+step  27420 | loss  1.479 |  84.4 min left
+step  27430 | loss  1.464 |  84.3 min left
+step  27440 | loss  1.500 |  84.2 min left
+step  27450 | loss  1.452 |  84.0 min left
+step  27460 | loss  1.501 |  83.9 min left
+step  27470 | loss  1.422 |  83.8 min left
+step  27480 | loss  1.406 |  83.6 min left
+step  27490 | loss  1.460 |  83.5 min left
+step  27500 | loss  1.475 |  83.3 min left
+step  27510 | loss  1.450 |  83.2 min left
+step  27520 | loss  1.479 |  83.1 min left
+step  27530 | loss  1.456 |  82.9 min left
+step  27540 | loss  1.491 |  82.8 min left
+step  27550 | loss  1.477 |  82.7 min left
+step  27560 | loss  1.480 |  82.5 min left
+step  27570 | loss  1.449 |  82.4 min left
+step  27580 | loss  1.460 |  82.3 min left
+step  27590 | loss  1.449 |  82.1 min left
+step  27600 | loss  1.436 |  82.0 min left
+step  27610 | loss  1.471 |  81.8 min left
+step  27620 | loss  1.478 |  81.7 min left
+step  27630 | loss  1.450 |  81.6 min left
+step  27640 | loss  1.491 |  81.4 min left
+step  27650 | loss  1.506 |  81.3 min left
+step  27660 | loss  1.489 |  81.1 min left
+step  27670 | loss  1.515 |  81.0 min left
+step  27680 | loss  1.476 |  80.8 min left
+step  27690 | loss  1.490 |  80.7 min left
+step  27700 | loss  1.480 |  80.6 min left
+step  27710 | loss  1.446 |  80.4 min left
+step  27720 | loss  1.442 |  80.3 min left
+step  27730 | loss  1.461 |  80.1 min left
+step  27740 | loss  1.488 |  80.0 min left
+step  27750 | loss  1.478 |  79.9 min left
+step  27760 | loss  1.460 |  79.7 min left
+step  27770 | loss  1.490 |  79.6 min left
+step  27780 | loss  1.460 |  79.4 min left
+step  27790 | loss  1.437 |  79.3 min left
+step  27800 | loss  1.447 |  79.2 min left
+step  27810 | loss  1.449 |  79.0 min left
+step  27820 | loss  1.448 |  78.9 min left
+step  27830 | loss  1.437 |  78.7 min left
+step  27840 | loss  1.465 |  78.6 min left
+step  27850 | loss  1.453 |  78.5 min left
+step  27860 | loss  1.434 |  78.3 min left
+step  27870 | loss  1.411 |  78.2 min left
+step  27880 | loss  1.447 |  78.0 min left
+step  27890 | loss  1.455 |  77.9 min left
+step  27900 | loss  1.444 |  77.8 min left
+step  27910 | loss  1.450 |  77.6 min left
+step  27920 | loss  1.461 |  77.5 min left
+step  27930 | loss  1.467 |  77.3 min left
+step  27940 | loss  1.457 |  77.2 min left
+step  27950 | loss  1.439 |  77.1 min left
+step  27960 | loss  1.465 |  76.9 min left
+step  27970 | loss  1.472 |  76.8 min left
+step  27980 | loss  1.466 |  76.6 min left
+step  27990 | loss  1.461 |  76.5 min left
+step  28000 | loss  1.466 |  76.4 min left
+
+--- sample ---
+Provost:
+And you'll not that idly many mint;
+But thou tmuch from out provicess thou bything on her bear me:
+Now now, doth so prince you are the more.
+
+CAMILLO:
+I would you was forth a brow both-hors?
+Is a loyal booth done to Qu hence; here I, is I am send the first spirity will for my
+mind as foll.
+
+--- end ---
+
+step  28010 | loss  1.454 |  75.5 min left
+step  28020 | loss  1.481 |  75.4 min left
+step  28030 | loss  1.453 |  75.3 min left
+step  28040 | loss  1.494 |  75.1 min left
+step  28050 | loss  1.464 |  75.0 min left
+step  28060 | loss  1.465 |  74.9 min left
+step  28070 | loss  1.466 |  74.7 min left
+step  28080 | loss  1.474 |  74.6 min left
+step  28090 | loss  1.550 |  74.4 min left
+step  28100 | loss  1.490 |  74.3 min left
+step  28110 | loss  1.490 |  74.2 min left
+step  28120 | loss  1.458 |  74.0 min left
+step  28130 | loss  1.492 |  73.9 min left
+step  28140 | loss  1.469 |  73.8 min left
+step  28150 | loss  1.452 |  73.6 min left
+step  28160 | loss  1.413 |  73.5 min left
+step  28170 | loss  1.428 |  73.4 min left
+step  28180 | loss  1.436 |  73.2 min left
+step  28190 | loss  1.428 |  73.1 min left
+step  28200 | loss  1.432 |  73.0 min left
+step  28210 | loss  1.449 |  72.8 min left
+step  28220 | loss  1.453 |  72.7 min left
+step  28230 | loss  1.463 |  72.5 min left
+step  28240 | loss  1.465 |  72.4 min left
+step  28250 | loss  1.494 |  72.3 min left
+step  28260 | loss  1.488 |  72.1 min left
+step  28270 | loss  1.474 |  72.0 min left
+step  28280 | loss  1.447 |  71.9 min left
+step  28290 | loss  1.469 |  71.7 min left
+step  28300 | loss  1.460 |  71.6 min left
+step  28310 | loss  1.467 |  71.4 min left
+step  28320 | loss  1.475 |  71.3 min left
+step  28330 | loss  1.461 |  71.2 min left
+step  28340 | loss  1.429 |  71.0 min left
+step  28350 | loss  1.424 |  70.9 min left
+step  28360 | loss  1.433 |  70.8 min left
+step  28370 | loss  1.431 |  70.6 min left
+step  28380 | loss  1.480 |  70.5 min left
+step  28390 | loss  1.475 |  70.3 min left
+step  28400 | loss  1.475 |  70.2 min left
+step  28410 | loss  1.473 |  70.1 min left
+step  28420 | loss  1.458 |  69.9 min left
+step  28430 | loss  1.453 |  69.8 min left
+step  28440 | loss  1.440 |  69.7 min left
+step  28450 | loss  1.446 |  69.5 min left
+step  28460 | loss  1.471 |  69.4 min left
+step  28470 | loss  1.478 |  69.2 min left
+step  28480 | loss  1.469 |  69.1 min left
+step  28490 | loss  1.455 |  69.0 min left
+step  28500 | loss  1.439 |  68.8 min left
+step  28510 | loss  1.435 |  68.7 min left
+step  28520 | loss  1.484 |  68.5 min left
+step  28530 | loss  1.469 |  68.4 min left
+step  28540 | loss  1.425 |  68.3 min left
+step  28550 | loss  1.411 |  68.1 min left
+step  28560 | loss  1.426 |  68.0 min left
+step  28570 | loss  1.468 |  67.8 min left
+step  28580 | loss  1.421 |  67.7 min left
+step  28590 | loss  1.456 |  67.5 min left
+step  28600 | loss  1.462 |  67.4 min left
+step  28610 | loss  1.427 |  67.3 min left
+step  28620 | loss  1.449 |  67.1 min left
+step  28630 | loss  1.461 |  67.0 min left
+step  28640 | loss  1.446 |  66.8 min left
+step  28650 | loss  1.447 |  66.7 min left
+step  28660 | loss  1.477 |  66.5 min left
+step  28670 | loss  1.452 |  66.4 min left
+step  28680 | loss  1.475 |  66.3 min left
+step  28690 | loss  1.473 |  66.1 min left
+step  28700 | loss  1.491 |  66.0 min left
+step  28710 | loss  1.472 |  65.8 min left
+step  28720 | loss  1.471 |  65.7 min left
+step  28730 | loss  1.474 |  65.5 min left
+step  28740 | loss  1.484 |  65.4 min left
+step  28750 | loss  1.486 |  65.2 min left
+step  28760 | loss  1.440 |  65.1 min left
+step  28770 | loss  1.462 |  64.9 min left
+step  28780 | loss  1.440 |  64.8 min left
+step  28790 | loss  1.477 |  64.7 min left
+step  28800 | loss  1.488 |  64.5 min left
+step  28810 | loss  1.461 |  64.4 min left
+step  28820 | loss  1.496 |  64.2 min left
+step  28830 | loss  1.465 |  64.1 min left
+step  28840 | loss  1.467 |  63.9 min left
+step  28850 | loss  1.461 |  63.8 min left
+step  28860 | loss  1.406 |  63.7 min left
+step  28870 | loss  1.442 |  63.5 min left
+step  28880 | loss  1.468 |  63.4 min left
+step  28890 | loss  1.461 |  63.2 min left
+step  28900 | loss  1.449 |  63.1 min left
+step  28910 | loss  1.475 |  62.9 min left
+step  28920 | loss  1.480 |  62.8 min left
+step  28930 | loss  1.443 |  62.7 min left
+step  28940 | loss  1.454 |  62.5 min left
+step  28950 | loss  1.462 |  62.4 min left
+step  28960 | loss  1.413 |  62.2 min left
+step  28970 | loss  1.463 |  62.1 min left
+step  28980 | loss  1.479 |  61.9 min left
+step  28990 | loss  1.474 |  61.8 min left
+step  29000 | loss  1.478 |  61.6 min left
+
+--- sample ---
+PRINCE EDWARD:
+How will your fortune, that's any car mannot gone of the
+corruptables.
+
+CATESBY:
+Not amend, for me to Bonny beat,
+And, or not send your troth lords,
+And never a man of the hinnour's entern captan's care
+To prepatience blesser, sights that
+serving your eden Edward, for on the pardon fo
+--- end ---
+
+step  29010 | loss  1.464 |  60.8 min left
+step  29020 | loss  1.467 |  60.7 min left
+step  29030 | loss  1.454 |  60.5 min left
+step  29040 | loss  1.455 |  60.4 min left
+step  29050 | loss  1.427 |  60.2 min left
+step  29060 | loss  1.427 |  60.1 min left
+step  29070 | loss  1.473 |  60.0 min left
+step  29080 | loss  1.484 |  59.8 min left
+step  29090 | loss  1.492 |  59.7 min left
+step  29100 | loss  1.423 |  59.6 min left
+step  29110 | loss  1.434 |  59.4 min left
+step  29120 | loss  1.428 |  59.3 min left
+step  29130 | loss  1.492 |  59.1 min left
+step  29140 | loss  1.489 |  59.0 min left
+step  29150 | loss  1.461 |  58.9 min left
+step  29160 | loss  1.478 |  58.7 min left
+step  29170 | loss  1.459 |  58.6 min left
+step  29180 | loss  1.458 |  58.5 min left
+step  29190 | loss  1.477 |  58.3 min left
+step  29200 | loss  1.440 |  58.2 min left
+step  29210 | loss  1.445 |  58.0 min left
+step  29220 | loss  1.422 |  57.9 min left
+step  29230 | loss  1.450 |  57.8 min left
+step  29240 | loss  1.479 |  57.6 min left
+step  29250 | loss  1.495 |  57.5 min left
+step  29260 | loss  1.451 |  57.4 min left
+step  29270 | loss  1.480 |  57.2 min left
+step  29280 | loss  1.486 |  57.1 min left
+step  29290 | loss  1.467 |  56.9 min left
+step  29300 | loss  1.455 |  56.8 min left
+step  29310 | loss  1.449 |  56.7 min left
+step  29320 | loss  1.469 |  56.5 min left
+step  29330 | loss  1.503 |  56.4 min left
+step  29340 | loss  1.490 |  56.3 min left
+step  29350 | loss  1.456 |  56.1 min left
+step  29360 | loss  1.452 |  56.0 min left
+step  29370 | loss  1.485 |  55.8 min left
+step  29380 | loss  1.470 |  55.7 min left
+step  29390 | loss  1.507 |  55.6 min left
+step  29400 | loss  1.472 |  55.4 min left
+step  29410 | loss  1.446 |  55.3 min left
+step  29420 | loss  1.438 |  55.1 min left
+step  29430 | loss  1.470 |  55.0 min left
+step  29440 | loss  1.437 |  54.9 min left
+step  29450 | loss  1.486 |  54.7 min left
+step  29460 | loss  1.465 |  54.6 min left
+step  29470 | loss  1.470 |  54.5 min left
+step  29480 | loss  1.472 |  54.3 min left
+step  29490 | loss  1.458 |  54.2 min left
+step  29500 | loss  1.429 |  54.0 min left
+step  29510 | loss  1.464 |  53.9 min left
+step  29520 | loss  1.452 |  53.7 min left
+step  29530 | loss  1.456 |  53.6 min left
+step  29540 | loss  1.462 |  53.4 min left
+step  29550 | loss  1.471 |  53.3 min left
+step  29560 | loss  1.485 |  53.2 min left
+step  29570 | loss  1.455 |  53.0 min left
+step  29580 | loss  1.441 |  52.9 min left
+step  29590 | loss  1.400 |  52.7 min left
+step  29600 | loss  1.397 |  52.6 min left
+step  29610 | loss  1.415 |  52.4 min left
+step  29620 | loss  1.441 |  52.3 min left
+step  29630 | loss  1.472 |  52.2 min left
+step  29640 | loss  1.480 |  52.0 min left
+step  29650 | loss  1.475 |  51.9 min left
+step  29660 | loss  1.473 |  51.7 min left
+step  29670 | loss  1.485 |  51.6 min left
+step  29680 | loss  1.469 |  51.4 min left
+step  29690 | loss  1.469 |  51.3 min left
+step  29700 | loss  1.504 |  51.2 min left
+step  29710 | loss  1.481 |  51.0 min left
+step  29720 | loss  1.444 |  50.9 min left
+step  29730 | loss  1.443 |  50.7 min left
+step  29740 | loss  1.432 |  50.6 min left
+step  29750 | loss  1.408 |  50.4 min left
+step  29760 | loss  1.502 |  50.3 min left
+step  29770 | loss  1.484 |  50.2 min left
+step  29780 | loss  1.472 |  50.0 min left
+step  29790 | loss  1.469 |  49.9 min left
+step  29800 | loss  1.472 |  49.7 min left
+step  29810 | loss  1.450 |  49.6 min left
+step  29820 | loss  1.510 |  49.4 min left
+step  29830 | loss  1.447 |  49.3 min left
+step  29840 | loss  1.421 |  49.2 min left
+step  29850 | loss  1.428 |  49.0 min left
+step  29860 | loss  1.417 |  48.9 min left
+step  29870 | loss  1.481 |  48.7 min left
+step  29880 | loss  1.495 |  48.6 min left
+step  29890 | loss  1.512 |  48.4 min left
+step  29900 | loss  1.492 |  48.3 min left
+step  29910 | loss  1.470 |  48.2 min left
+step  29920 | loss  1.465 |  48.0 min left
+step  29930 | loss  1.458 |  47.9 min left
+step  29940 | loss  1.473 |  47.7 min left
+step  29950 | loss  1.455 |  47.6 min left
+step  29960 | loss  1.430 |  47.4 min left
+step  29970 | loss  1.443 |  47.3 min left
+step  29980 | loss  1.431 |  47.2 min left
+step  29990 | loss  1.434 |  47.0 min left
+step  30000 | loss  1.480 |  46.9 min left
+
+--- sample ---
+GREMIO:
+So then you speak,
+What seek the authorious of the death to her such eyes.
+
+DUKE OF YORK:
+That you'll to lalined itself.
+
+RIVERS:
+O, I next thee, my lords?
+
+PETRUCHIO:
+How the misery--
+
+Second Capulet, we will be decreed fouls
+Off were not love me by the death him.
+
+ABHORSON:
+Julit, my lord:
+--- end ---
+
+step  30010 | loss  1.488 |  46.0 min left
+step  30020 | loss  1.489 |  45.9 min left
+step  30030 | loss  1.482 |  45.8 min left
+step  30040 | loss  1.488 |  45.6 min left
+step  30050 | loss  1.462 |  45.5 min left
+step  30060 | loss  1.453 |  45.4 min left
+step  30070 | loss  1.461 |  45.2 min left
+step  30080 | loss  1.432 |  45.1 min left
+step  30090 | loss  1.451 |  44.9 min left
+step  30100 | loss  1.450 |  44.8 min left
+step  30110 | loss  1.444 |  44.7 min left
+step  30120 | loss  1.435 |  44.5 min left
+step  30130 | loss  1.445 |  44.4 min left
+step  30140 | loss  1.417 |  44.3 min left
+step  30150 | loss  1.414 |  44.1 min left
+step  30160 | loss  1.412 |  44.0 min left
+step  30170 | loss  1.467 |  43.8 min left
+step  30180 | loss  1.466 |  43.7 min left
+step  30190 | loss  1.464 |  43.6 min left
+step  30200 | loss  1.423 |  43.4 min left
+step  30210 | loss  1.448 |  43.3 min left
+step  30220 | loss  1.445 |  43.1 min left
+step  30230 | loss  1.420 |  43.0 min left
+step  30240 | loss  1.419 |  42.9 min left
+step  30250 | loss  1.484 |  42.7 min left
+step  30260 | loss  1.513 |  42.6 min left
+step  30270 | loss  1.465 |  42.5 min left
+step  30280 | loss  1.448 |  42.3 min left
+step  30290 | loss  1.450 |  42.2 min left
+step  30300 | loss  1.472 |  42.0 min left
+step  30310 | loss  1.446 |  41.9 min left
+step  30320 | loss  1.476 |  41.8 min left
+step  30330 | loss  1.470 |  41.6 min left
+step  30340 | loss  1.427 |  41.5 min left
+step  30350 | loss  1.421 |  41.3 min left
+step  30360 | loss  1.419 |  41.2 min left
+step  30370 | loss  1.441 |  41.1 min left
+step  30380 | loss  1.495 |  40.9 min left
+step  30390 | loss  1.452 |  40.8 min left
+step  30400 | loss  1.423 |  40.7 min left
+step  30410 | loss  1.410 |  40.5 min left
+step  30420 | loss  1.453 |  40.4 min left
+step  30430 | loss  1.490 |  40.2 min left
+step  30440 | loss  1.491 |  40.1 min left
+step  30450 | loss  1.487 |  40.0 min left
+step  30460 | loss  1.451 |  39.8 min left
+step  30470 | loss  1.460 |  39.7 min left
+step  30480 | loss  1.485 |  39.5 min left
+step  30490 | loss  1.495 |  39.4 min left
+step  30500 | loss  1.461 |  39.3 min left
+step  30510 | loss  1.458 |  39.1 min left
+step  30520 | loss  1.441 |  39.0 min left
+step  30530 | loss  1.438 |  38.8 min left
+step  30540 | loss  1.492 |  38.7 min left
+step  30550 | loss  1.509 |  38.6 min left
+step  30560 | loss  1.494 |  38.4 min left
+step  30570 | loss  1.481 |  38.3 min left
+step  30580 | loss  1.483 |  38.1 min left
+step  30590 | loss  1.449 |  38.0 min left
+step  30600 | loss  1.478 |  37.8 min left
+step  30610 | loss  1.470 |  37.7 min left
+step  30620 | loss  1.471 |  37.5 min left
+step  30630 | loss  1.505 |  37.4 min left
+step  30640 | loss  1.502 |  37.3 min left
+step  30650 | loss  1.473 |  37.1 min left
+step  30660 | loss  1.438 |  37.0 min left
+step  30670 | loss  1.427 |  36.8 min left
+step  30680 | loss  1.461 |  36.7 min left
+step  30690 | loss  1.454 |  36.5 min left
+step  30700 | loss  1.444 |  36.4 min left
+step  30710 | loss  1.456 |  36.2 min left
+step  30720 | loss  1.446 |  36.1 min left
+step  30730 | loss  1.478 |  35.9 min left
+step  30740 | loss  1.444 |  35.8 min left
+step  30750 | loss  1.443 |  35.7 min left
+step  30760 | loss  1.440 |  35.5 min left
+step  30770 | loss  1.409 |  35.4 min left
+step  30780 | loss  1.428 |  35.2 min left
+step  30790 | loss  1.448 |  35.1 min left
+step  30800 | loss  1.452 |  34.9 min left
+step  30810 | loss  1.497 |  34.8 min left
+step  30820 | loss  1.463 |  34.6 min left
+step  30830 | loss  1.460 |  34.5 min left
+step  30840 | loss  1.465 |  34.4 min left
+step  30850 | loss  1.455 |  34.2 min left
+step  30860 | loss  1.450 |  34.1 min left
+step  30870 | loss  1.460 |  33.9 min left
+step  30880 | loss  1.442 |  33.8 min left
+step  30890 | loss  1.479 |  33.6 min left
+step  30900 | loss  1.446 |  33.5 min left
+step  30910 | loss  1.450 |  33.3 min left
+step  30920 | loss  1.458 |  33.2 min left
+step  30930 | loss  1.435 |  33.0 min left
+step  30940 | loss  1.462 |  32.9 min left
+step  30950 | loss  1.480 |  32.8 min left
+step  30960 | loss  1.475 |  32.6 min left
+step  30970 | loss  1.528 |  32.5 min left
+step  30980 | loss  1.488 |  32.3 min left
+step  30990 | loss  1.467 |  32.2 min left
+step  31000 | loss  1.434 |  32.0 min left
+
+--- sample ---
+ELBOW:
+
+Shepherd:
+My heart, boy.
+
+SEBASTIAN:
+Where they wert why shall man peace it is my mean,
+And well da
+and knock to day fighly pate no horing and shall I reparl'd in thee with a leoften soul
+That are do gone, all as you have man; heir hate, told EDWARD IV:
+Hang, go heavy see, what, is may act t
+--- end ---
+
+step  31010 | loss  1.454 |  31.2 min left
+step  31020 | loss  1.453 |  31.1 min left
+step  31030 | loss  1.433 |  30.9 min left
+step  31040 | loss  1.444 |  30.8 min left
+step  31050 | loss  1.430 |  30.6 min left
+step  31060 | loss  1.380 |  30.5 min left
+step  31070 | loss  1.426 |  30.4 min left
+step  31080 | loss  1.452 |  30.2 min left
+step  31090 | loss  1.447 |  30.1 min left
+step  31100 | loss  1.423 |  29.9 min left
+step  31110 | loss  1.464 |  29.8 min left
+step  31120 | loss  1.465 |  29.7 min left
+step  31130 | loss  1.449 |  29.5 min left
+step  31140 | loss  1.471 |  29.4 min left
+step  31150 | loss  1.424 |  29.2 min left
+step  31160 | loss  1.487 |  29.1 min left
+step  31170 | loss  1.450 |  29.0 min left
+step  31180 | loss  1.477 |  28.8 min left
+step  31190 | loss  1.508 |  28.7 min left
+step  31200 | loss  1.515 |  28.5 min left
+step  31210 | loss  1.472 |  28.4 min left
+step  31220 | loss  1.425 |  28.3 min left
+step  31230 | loss  1.471 |  28.1 min left
+step  31240 | loss  1.475 |  28.0 min left
+step  31250 | loss  1.444 |  27.9 min left
+step  31260 | loss  1.444 |  27.7 min left
+step  31270 | loss  1.458 |  27.6 min left
+step  31280 | loss  1.413 |  27.4 min left
+step  31290 | loss  1.443 |  27.3 min left
+step  31300 | loss  1.418 |  27.2 min left
+step  31310 | loss  1.406 |  27.0 min left
+step  31320 | loss  1.417 |  26.9 min left
+step  31330 | loss  1.462 |  26.7 min left
+step  31340 | loss  1.429 |  26.6 min left
+step  31350 | loss  1.443 |  26.5 min left
+step  31360 | loss  1.476 |  26.3 min left
+step  31370 | loss  1.518 |  26.2 min left
+step  31380 | loss  1.492 |  26.0 min left
+step  31390 | loss  1.453 |  25.9 min left
+step  31400 | loss  1.466 |  25.8 min left
+step  31410 | loss  1.463 |  25.6 min left
+step  31420 | loss  1.466 |  25.5 min left
+step  31430 | loss  1.431 |  25.3 min left
+step  31440 | loss  1.463 |  25.2 min left
+step  31450 | loss  1.473 |  25.1 min left
+step  31460 | loss  1.466 |  24.9 min left
+step  31470 | loss  1.448 |  24.8 min left
+step  31480 | loss  1.449 |  24.6 min left
+step  31490 | loss  1.415 |  24.5 min left
+step  31500 | loss  1.441 |  24.4 min left
+step  31510 | loss  1.437 |  24.2 min left
+step  31520 | loss  1.484 |  24.1 min left
+step  31530 | loss  1.441 |  23.9 min left
+step  31540 | loss  1.466 |  23.8 min left
+step  31550 | loss  1.492 |  23.7 min left
+step  31560 | loss  1.486 |  23.5 min left
+step  31570 | loss  1.458 |  23.4 min left
+step  31580 | loss  1.458 |  23.2 min left
+step  31590 | loss  1.481 |  23.1 min left
+step  31600 | loss  1.448 |  23.0 min left
+step  31610 | loss  1.411 |  22.8 min left
+step  31620 | loss  1.411 |  22.7 min left
+step  31630 | loss  1.454 |  22.5 min left
+step  31640 | loss  1.466 |  22.4 min left
+step  31650 | loss  1.419 |  22.2 min left
+step  31660 | loss  1.474 |  22.1 min left
+step  31670 | loss  1.468 |  22.0 min left
+step  31680 | loss  1.487 |  21.8 min left
+step  31690 | loss  1.472 |  21.7 min left
+step  31700 | loss  1.429 |  21.5 min left
+step  31710 | loss  1.464 |  21.4 min left
+step  31720 | loss  1.434 |  21.2 min left
+step  31730 | loss  1.457 |  21.1 min left
+step  31740 | loss  1.443 |  20.9 min left
+step  31750 | loss  1.457 |  20.8 min left
+step  31760 | loss  1.413 |  20.6 min left
+step  31770 | loss  1.419 |  20.5 min left
+step  31780 | loss  1.474 |  20.3 min left
+step  31790 | loss  1.437 |  20.2 min left
+step  31800 | loss  1.449 |  20.1 min left
+step  31810 | loss  1.458 |  19.9 min left
+step  31820 | loss  1.462 |  19.8 min left
+step  31830 | loss  1.473 |  19.6 min left
+step  31840 | loss  1.491 |  19.5 min left
+step  31850 | loss  1.440 |  19.3 min left
+step  31860 | loss  1.411 |  19.2 min left
+step  31870 | loss  1.414 |  19.1 min left
+step  31880 | loss  1.418 |  18.9 min left
+step  31890 | loss  1.455 |  18.8 min left
+step  31900 | loss  1.451 |  18.6 min left
+step  31910 | loss  1.456 |  18.5 min left
+step  31920 | loss  1.416 |  18.3 min left
+step  31930 | loss  1.459 |  18.2 min left
+step  31940 | loss  1.421 |  18.1 min left
+step  31950 | loss  1.462 |  17.9 min left
+step  31960 | loss  1.494 |  17.8 min left
+step  31970 | loss  1.479 |  17.6 min left
+step  31980 | loss  1.454 |  17.5 min left
+step  31990 | loss  1.426 |  17.3 min left
+step  32000 | loss  1.409 |  17.2 min left
+
+--- sample ---
+GAUNT:
+See, Richard frees Londons:
+I wind my mistress letters a man:
+Which what is his heirs from my bear what widow didly my letter,
+Pray thee, and heaven and swear with my heart.
+
+KING RICHARD III:
+But yet soul with princely can the fie
+That spateth out a vetter pay, I would have
+Stanley and confe
+--- end ---
+
+step  32010 | loss  1.397 |  16.4 min left
+step  32020 | loss  1.414 |  16.2 min left
+step  32030 | loss  1.424 |  16.1 min left
+step  32040 | loss  1.418 |  16.0 min left
+step  32050 | loss  1.407 |  15.8 min left
+step  32060 | loss  1.387 |  15.7 min left
+step  32070 | loss  1.457 |  15.5 min left
+step  32080 | loss  1.474 |  15.4 min left
+step  32090 | loss  1.473 |  15.3 min left
+step  32100 | loss  1.479 |  15.1 min left
+step  32110 | loss  1.450 |  15.0 min left
+step  32120 | loss  1.416 |  14.8 min left
+step  32130 | loss  1.462 |  14.7 min left
+step  32140 | loss  1.437 |  14.6 min left
+step  32150 | loss  1.455 |  14.4 min left
+step  32160 | loss  1.463 |  14.3 min left
+step  32170 | loss  1.489 |  14.1 min left
+step  32180 | loss  1.462 |  14.0 min left
+step  32190 | loss  1.438 |  13.9 min left
+step  32200 | loss  1.462 |  13.7 min left
+step  32210 | loss  1.450 |  13.6 min left
+step  32220 | loss  1.434 |  13.4 min left
+step  32230 | loss  1.432 |  13.3 min left
+step  32240 | loss  1.419 |  13.2 min left
+step  32250 | loss  1.422 |  13.0 min left
+step  32260 | loss  1.403 |  12.9 min left
+step  32270 | loss  1.420 |  12.7 min left
+step  32280 | loss  1.409 |  12.6 min left
+step  32290 | loss  1.468 |  12.5 min left
+step  32300 | loss  1.454 |  12.3 min left
+step  32310 | loss  1.459 |  12.2 min left
+step  32320 | loss  1.444 |  12.1 min left
+step  32330 | loss  1.459 |  11.9 min left
+step  32340 | loss  1.450 |  11.8 min left
+step  32350 | loss  1.467 |  11.6 min left
+step  32360 | loss  1.446 |  11.5 min left
+step  32370 | loss  1.479 |  11.3 min left
+step  32380 | loss  1.454 |  11.2 min left
+step  32390 | loss  1.458 |  11.1 min left
+step  32400 | loss  1.402 |  10.9 min left
+step  32410 | loss  1.454 |  10.8 min left
+step  32420 | loss  1.440 |  10.7 min left
+step  32430 | loss  1.470 |  10.5 min left
+step  32440 | loss  1.474 |  10.4 min left
+step  32450 | loss  1.425 |  10.2 min left
+step  32460 | loss  1.466 |  10.1 min left
+step  32470 | loss  1.459 |   9.9 min left
+step  32480 | loss  1.458 |   9.8 min left
+step  32490 | loss  1.457 |   9.7 min left
+step  32500 | loss  1.466 |   9.5 min left
+step  32510 | loss  1.456 |   9.4 min left
+step  32520 | loss  1.467 |   9.2 min left
+step  32530 | loss  1.463 |   9.1 min left
+step  32540 | loss  1.417 |   9.0 min left
+step  32550 | loss  1.464 |   8.8 min left
+step  32560 | loss  1.464 |   8.7 min left
+step  32570 | loss  1.450 |   8.5 min left
+step  32580 | loss  1.447 |   8.4 min left
+step  32590 | loss  1.441 |   8.3 min left
+step  32600 | loss  1.436 |   8.1 min left
+step  32610 | loss  1.444 |   8.0 min left
+step  32620 | loss  1.486 |   7.8 min left
+step  32630 | loss  1.457 |   7.7 min left
+step  32640 | loss  1.434 |   7.5 min left
+step  32650 | loss  1.445 |   7.4 min left
+step  32660 | loss  1.403 |   7.3 min left
+step  32670 | loss  1.454 |   7.1 min left
+step  32680 | loss  1.442 |   7.0 min left
+step  32690 | loss  1.466 |   6.8 min left
+step  32700 | loss  1.470 |   6.7 min left
+step  32710 | loss  1.479 |   6.5 min left
+step  32720 | loss  1.427 |   6.4 min left
+step  32730 | loss  1.435 |   6.2 min left
+step  32740 | loss  1.439 |   6.1 min left
+step  32750 | loss  1.438 |   5.9 min left
+step  32760 | loss  1.405 |   5.8 min left
+step  32770 | loss  1.418 |   5.6 min left
+step  32780 | loss  1.439 |   5.5 min left
+step  32790 | loss  1.435 |   5.4 min left
+step  32800 | loss  1.419 |   5.2 min left
+step  32810 | loss  1.476 |   5.1 min left
+step  32820 | loss  1.468 |   4.9 min left
+step  32830 | loss  1.422 |   4.8 min left
+step  32840 | loss  1.448 |   4.6 min left
+step  32850 | loss  1.477 |   4.5 min left
+step  32860 | loss  1.450 |   4.3 min left
+step  32870 | loss  1.453 |   4.2 min left
+step  32880 | loss  1.457 |   4.0 min left
+step  32890 | loss  1.389 |   3.9 min left
+step  32900 | loss  1.453 |   3.7 min left
+step  32910 | loss  1.447 |   3.6 min left
+step  32920 | loss  1.447 |   3.5 min left
+step  32930 | loss  1.439 |   3.3 min left
+step  32940 | loss  1.453 |   3.2 min left
+step  32950 | loss  1.484 |   3.0 min left
+step  32960 | loss  1.439 |   2.9 min left
+step  32970 | loss  1.447 |   2.7 min left
+step  32980 | loss  1.443 |   2.6 min left
+step  32990 | loss  1.424 |   2.4 min left
+step  33000 | loss  1.440 |   2.3 min left
+
+--- sample ---
+BUCKINGHAM:
+That old was his good time, mayor, a subject,
+You success the doubt. That my honour areins,
+Like their a prichanced of the unking
+His knace my suits upon the pil in the attend the turns
+Of that that besty unto a mother,
+And he in thy pity fink you rath;
+I some a condumbliness blow me our
+--- end ---
+
+step  33010 | loss  1.442 |   1.4 min left
+step  33020 | loss  1.471 |   1.3 min left
+step  33030 | loss  1.452 |   1.2 min left
+step  33040 | loss  1.409 |   1.0 min left
+step  33050 | loss  1.424 |   0.9 min left
+step  33060 | loss  1.467 |   0.7 min left
+step  33070 | loss  1.487 |   0.6 min left
+step  33080 | loss  1.447 |   0.5 min left
+step  33090 | loss  1.453 |   0.3 min left
+step  33100 | loss  1.440 |   0.2 min left
+step  33110 | loss  1.464 |   0.0 min left
+
+done at step 33113. trained for 120 min.
+
+============================================================
+FINAL SAMPLE
+============================================================
+ROMEO:
+You will make him to her hell fame:
+Be false and by the news of him.
+Thou hast not late with my loath oCld,
+I' thee, not, I hope; and that they with out to him absance.
+
+NORTHUMBERLAND:
+To the likely faint with my name are whose inecius:
+I cannot know your grace; I and my heart!
+
+CURTIS:
+The foriend
+To meet him lanking to unto the hoveal,
+But I do noth your sovereign preparent not, and to Bereft thee the sweet into the dear of my my mere.
+
+GLOUCESTER:
+Romeo! I ae leave a bupt to such your wit to did me;
+The further than enough four your own throne health.
+
+GLOUCESTER:
+Why paints, 'tis prove upon the fender is so a purpose unto unless and the suit,
+Uncle among than the sorrow crown and I may dalought from his daughter by the ling were backer of your life.
+
+KATHARINA:
+He shall see her weedds my aught will
+enowner to such in the neews? there I have heard
+To soome so like my cried by me.
+
+CURTIS:
+It pleases, but not your good good would be cry of your heart
+Their dreams to end by her even hence, for the own to hanging I to come to me
+That the duke of it was a tumblen;
+Mean'd the crown cheek to Barn anary in outh
+To peace
+By all in him of my heir, that were
+we to done.
+
+CORIOLANU
