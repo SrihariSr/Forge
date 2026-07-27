@@ -35,7 +35,8 @@ def compile_graph(root):
         # This node isn't in any group, which means it is a matmul
         if group is None:
             steps.append(("kernel", node))
-        
+            continue
+
         if id(group) in emitted:
             continue
         emitted.add(id(group))
@@ -51,6 +52,8 @@ def compile_graph(root):
         fn = compile_and_load(c_src, name, len(inputs))
 
         steps.append(("fused", group, inputs, fn))
+
+    return steps
 
 def run_compiled(root, steps, feeds):
     """

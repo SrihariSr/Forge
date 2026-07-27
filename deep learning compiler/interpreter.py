@@ -1,5 +1,4 @@
 import ctypes
-import ctypes
 import array
 from graph import topological_order
 
@@ -11,7 +10,7 @@ for _name in ("add", "sub", "mul"):
     _fn = getattr(_lib, _name)
     _fn.argtypes = [_FP, _FP, _FP, ctypes.c_int]
     _fn.restype = None
-_lib.relu.argtypes = [_FP, _FP, _FP, ctypes.c_int]
+_lib.relu.argtypes = [_FP, _FP, ctypes.c_int]
 _lib.relu.restype = None
 _lib.matmul.argtypes = [_FP, _FP, _FP, ctypes.c_int, ctypes.c_int, ctypes.c_int]
 _lib.matmul.restype = None

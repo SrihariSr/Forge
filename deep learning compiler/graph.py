@@ -1,6 +1,7 @@
 _counter = 0 # global ID counter for readable names
 
 def _next_id() -> int:
+    global _counter
     i = _counter
     _counter += 1
     return i

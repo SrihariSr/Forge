@@ -7,7 +7,7 @@ C_EXP = {
     "add": "({} + {})",
     "sub": "({} - {})",
     "mul": "({} * {})",
-    "relu": "{0} > 0.0f ? {0} : 0.0f"
+    "relu": "({0} > 0.0f ? {0} : 0.0f)"
 }
 
 def generate_c(group, group_inputs, func_name="fused_kernel") -> list:
@@ -19,7 +19,7 @@ def generate_c(group, group_inputs, func_name="fused_kernel") -> list:
     Every intermediate variable is a local variable so lives only in the register, not main memory
     which leads to a speedup.
     """
-    param_of = {node: f"in {i}" for i, node in enumerate(group_inputs)}
+    param_of = {node: f"in{i}" for i, node in enumerate(group_inputs)}
 
     params = ", ".join(f"const float* {param_of[n]}" for n in group_inputs)
 
@@ -91,7 +91,7 @@ def group_external_inputs(group):
         for inp in node.inputs:
             if inp not in members and inp not in seen:
                 seen.add(inp)
-                input.append(inp)
+                inputs.append(inp)
     
     return inputs
     
