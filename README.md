@@ -1,222 +1,357 @@
-# Forge 🧠
+# Forge
 
-A fully differentiable machine learning library built from scratch using only Python. Every operation is implemented using first principles.
+A machine learning library written from scratch in Python, with a deep learning compiler that generates C.
 
-## Why This Exists
+No PyTorch, no TensorFlow, no NumPy in the core. Every operation, from the autograd engine to the attention mechanism, is implemented from first principles. The compiler on top of it analyses computation graphs, fuses operations, and emits optimised C at run time.
 
-Forge isn't a wrapper around existing libraries. It's a ground-up implementation of the core ideas behind modern Machine Learning frameworks, built to deeply understand how tools like PyTorch, JAX, and MLX work under the hood.
+---
 
-**Notable Achievement:** Trained a character-level transformer language model entirely on this framework.
+## What is here
 
-## Features
+**A differentiable tensor library.** Reverse-mode automatic differentiation on a define-by-run graph, a typed memory backend, and broadcasting that follows NumPy semantics without depending on NumPy.
 
-### Core Tensor Engine
-- Multi-dimensional tensor class with typed memory backend
-- Memory efficient storage using Python's `array` module instead of Python lists leading to 6x memory usage reduction
-- Full broadcasting support following NumPy semantics
-- Reshape, transpose, and element-wise operations
+**A neural network framework.** A `Module` system with automatic parameter registration, layers, optimisers, and loss functions.
 
-### Automatic Differentiation
-- Automatic gradient computation tracks operations as they happen and computes gradients by walking backwards through the computation, just like PyTorch
-- Support for arbitrary compositions of differentiable operations
-- Numerical gradient verification using central finite differences
-- Custom `Function` API for user-defined differentiable operations
+**A decoder-only transformer.** Multi-head causal self-attention, LayerNorm, GELU, learned positional encoding, and pre-norm residual blocks, all built on the autograd engine above and gradient-checked individually.
 
-### Neural Network Module System
-- `Module` base class with automatic parameter registration using `__setattr__`
-- Recursive parameter discovery across nested modules
-- Train and eval mode switching
-- Built-in layers: `Linear`, `Embedding`, `ReLU`, `Sigmoid` and `Tanh`
+**Hardware backends.** Matrix multiplication dispatches to the Apple Metal GPU, to Apple Accelerate BLAS on the CPU, or to a pure Python fallback, chosen by problem size.
 
-### Transformer Architecture
-- Each position in a sequence learns which other positions are important to it, using the standard Query/Key/Value attention formula
-- Transformer blocks with residual connections and feed-forward networks
-- Character-level language model
-- Successfully trained to generate coherent text
+**A deep learning compiler.** A separate front end that builds a graph, plans operator fusion, generates C source, compiles it with gcc, and loads it back through ctypes.
 
-### Optimizers
-- SGD with momentum
-- Adam with bias correction and adaptive learning rates
+---
 
-### Loss Functions
-- MSELoss (Mean Squared Error)
-- BCELoss (Binary Cross Entropy)
-- CrossEntropyLoss with numerically stable softmax
+## Results
 
-### Operator Fusion
-- Graph-level pattern detection that identifies `Linear` to `ReLU` sequences
-- Automatic replacement with fused `FusedLinearReLU` operations
-- Inspired by XLA and TorchInductor optimization passes
+### Shakespeare
 
-### Serialization
-- Save/load model weights to a `.json` file
-- State dict (a dictionary of all model weights) matching PyTorch's API convention
-- Dot-separated parameter naming for nested module hierarchies
+A 550,977-parameter GPT trained on the 1.11M-character tinyshakespeare corpus, using data-parallel training across 8 CPU cores.
 
+| | |
+|---|---|
+| Model | 4 layers, 4 heads, 128 dimensions |
+| Training | 33,113 steps, roughly 8 hours |
+| Loss | 3.66 to 1.44 (character-level cross-entropy) |
 
-## Quick Start
+The model learns Shakespeare's structure and register from raw characters, with no hand-coded rules:
 
-### Create Tensors
+```
+ROMEO:
+You will make him to her hell fame:
+Be false and by the news of him.
+Thou hast not late with my loath oCld,
+
+NORTHUMBERLAND:
+To the likely faint with my name are whose inecius:
+I cannot know your grace; I and my heart!
+```
+
+It learned the style, not the meaning. Words wander and lines do not resolve, which is the honest ceiling for a model this size. Real coherence needs roughly two orders of magnitude more parameters.
+
+<details>
+<summary><b>Watch it learn</b></summary>
+
+Samples taken during the run, showing what the model had worked out at each point. Nothing about play structure was ever specified.
+
+**Step 1,000.** Letter frequencies and word lengths. No words.
+
+```
+Nos sor nore and thee. Kacefrar, sand a air to a trimeng ow brage;
+Be cives'd suee ie fie icires eater,
+```
+
+**Step 2,000.** It discovers that plays have named speakers, and invents one.
+
+```
+OLIZABETH:
+The heave in withat's mairest shis shalll weere pooosinessour centery
+```
+
+**Step 3,000.** Reaching for a real character name, and nearly getting there.
+
+```
+CORIONUS:
+What you sumbled?
+```
+
+**Step 33,113.** Real speakers, verse structure, archaic register.
+
+```
+ROMEO:
+You will make him to her hell fame:
+Be false and by the news of him.
+```
+
+</details>
+
+### Compiler
+
+Measured on an Apple M4 Max. Every optimised path is verified to produce output identical to the unoptimised path before it is timed.
+
+| Optimisation | Workload | Before | After | Speedup |
+|---|---|---|---|---|
+| Operator fusion | 16M elements | 8.1ms | 3.4ms | 2.33x |
+| Cache-blocked matmul | 768 x 768 | 349.1ms | 32.1ms | 10.88x |
+| Both, 4-layer MLP | 256 x 256 | 43.1ms | 4.8ms | 8.94x |
+
+Against BLAS, called through NumPy, on the same machine:
+
+| Size | Naive | Compiled | BLAS | Compiled, slower by |
+|---|---|---|---|---|
+| 256 x 256 | 10.7ms | 1.2ms | 0.02ms | 49x |
+| 512 x 512 | 97.1ms | 11.6ms | 0.17ms | 69x |
+| 768 x 768 | 348.4ms | 32.1ms | 0.27ms | 117x |
+
+The compiled matmul reaches about 28 GFLOPS against BLAS's 3.4 TFLOPS. The gap is SIMD and multithreading, neither of which is implemented yet.
+
+---
+
+## Quick start
+
+```bash
+git clone https://github.com/SrihariSr/Forge.git
+cd Forge
+```
+
+Nothing to install for the core library. Python 3.10 or later.
+
+### Tensors and gradients
+
 ```python
 from Forge import Tensor
 
 a = Tensor([[1.0, 2.0], [3.0, 4.0]])
 b = Tensor([[5.0, 6.0], [7.0, 8.0]])
 
-print(a + b)        # Element-wise addition
-print(a @ b)        # Matrix multiplication
-print(a.T)          # Transpose
-print(a.shape)      # (2, 2)
-```
+print(a + b)      # element-wise addition
+print(a @ b)      # matrix multiplication
+print(a.T)        # transpose
 
-### Automatic Differentiation
-```python
 x = Tensor([2.0, 3.0], requires_grad=True)
 y = ((x * x) + x).sum()
 y.backward()
-print(x.grad)       # dy/dx = 2x + 1
+print(x.grad)     # dy/dx = 2x + 1
 ```
 
-### Train a Neural Network
+### A GPT
+
 ```python
-from NeuralNetwork.layers import Linear, MSELoss
-from Optim.optimizer import SGD
-
-model = Linear(2, 1)
-criterion = MSELoss()
-optimizer = SGD(model.parameters(), lr=0.01)
-
-for epoch in range(100):
-    pred = model(x)
-    loss = criterion(pred, target)
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
-```
-
-### Operator Fusion
-```python
-from NeuralNetwork.layers import Linear, ReLULayer, Sequential
-
-model = Sequential(
-    Linear(2, 8),    # These two get fused into
-    ReLULayer(),     # a single FusedLinearReLU
-    Linear(8, 1),
-)
-print(model)         # Shows 3 layers
-model.optimize()
-print(model)         # Shows 2 layers: Linear+ReLU fused
-```
-
-### Train a Transformer
-```python
-from NeuralNetwork.layers import CharTransformer
+from NeuralNetwork.layers import GPT
 from NeuralNetwork.losses import CrossEntropyLoss
 from Optim.optimizer import Adam
 
-model = CharTransformer(vocab_size=8, embed_dim=16, ff_dim=32, seq_len=8)
+model = GPT(vocab_size=65, embed_dim=128, num_heads=4,
+            ff_dim=256, num_layers=4, seq_len=32)
 criterion = CrossEntropyLoss()
-optimizer = Adam(model.parameters(), lr=0.001)
+optimizer = Adam(model.parameters(), lr=0.002)
 
+logits = model([[1, 2, 3, 4]])
+loss = criterion(logits, [2, 3, 4, 5])
+optimizer.zero_grad()
+loss.backward()
+optimizer.step()
+```
+
+### Training runs
+
+```bash
+python3 pokemon_names.py       # invent Pokemon names
+python3 train_shakespeare.py   # data-parallel Shakespeare training
+python3 resume_shakespeare.py  # continue from a checkpoint
+```
+
+### The compiler
+
+```bash
+cd "deep learning compiler"
+gcc -O2 -shared -fPIC kernels.c -o kernels.so
+python3 benchmark.py
 ```
 
 ---
 
-## Benchmarks
+## How it works
 
-Benchmarked on Apple M4 Max. All times are median of 10 runs.
+### Automatic differentiation
 
-| Operation | Forge | PyTorch | Ratio |
-|---|---|---|---|
-| Matmul 64×64 | 20.710 ms | 0.002 ms | 11292.4x |
-| Matmul 128×128 | 167.914 ms | 0.006 ms | 30076.0x |
-| Add (100k elements) | 4.435 ms | 0.044 ms | 100.4x |
-| ReLU (100k elements) | 0.371 ms | 0.002 ms | 228.1x |
-| Training (100 epochs) | 13.201 ms | 6.669 ms | 2.0x |
+Every operation records itself in a graph as it runs. Calling `backward()` walks that graph in reverse topological order, applying the chain rule at each node and accumulating gradients into the leaves.
 
-> Run the `runBenchmarks.py` file if you wish to reproduce these results (results may vary with hardware specifications).
+Adding a new differentiable operation means subclassing `Function` and writing `forward` and `backward`. Anything composed from existing operations gets its gradient for free, which is why `LayerNorm` has no backward method of its own.
 
-### Performance Analysis
+### Gradient verification
 
-This library is written in pure Python with no C extensions. The performance gap with PyTorch is hence expected. This can be explained due to the following reasons:
-
-1. **Python loop overhead**: Forge's matmul is implemented using triple nested Python loops. PyTorch uses optimized BLAS libraries written in C/C++.
-2. **No SIMD/vectorization**: PyTorch uses SSE/AVX instructions that process multiple numbers in a single CPU cycle. Python processes one number at a time.
-3. **No hardware acceleration**: PyTorch on Apple Silicon leverages the AMX coprocessor and Accelerate framework. Pure Python cannot utilize these hardware features.
-4. **Memory allocation**: Forge creates new typed arrays for every operation. PyTorch uses memory pools and in-place operations.
-
-## Transformer Training Results
-
-Trained a character-level transformer using 2,152 parameters on the pattern "hello world":
-
-```
-Epoch   0, Loss: 2.0553
-Epoch 100, Loss: 0.4421
-Epoch 300, Loss: 0.4032
-Epoch 490, Loss: 0.3521
-
-Generated: "hello world world held hello"
-```
-
-### Key Observations
-
-**Learning Rate Sensitivity:**
-Training at `lr=0.01` caused instability with loss spikes at later epochs. Reducing to `lr=0.001` eliminated the instability and produced significantly better generation quality. This demonstrates the importance of hyperparameter tuning.
-
-**Loss vs Generation Quality:**
-Seed search across 20 random initializations revealed that lower training loss doesn't always correlate with better text generation. Models with the lowest loss converged to repetitive local minima (outputting "wo wo wo wo"), while models with slightly higher loss learned richer, more accurate patterns ("hello world world held hello").
-
-The model was run on 20 different seed values to identify the best seed value to use. However, the seed value with the least loss did not produce the best text generation as initially expected. Models with slightly higher loss learned better, more accurate patterns. This demonstrates that the loss function is not always a perfect indicator of the model's performance.
-
-**Positional Encoding:**
-The model occasionally confuses similar subsequences (generating "held" instead of "hello") due to the lack of explicit positional encoding. This demonstrates why positional information is critical in transformer architectures. Without it, the model cannot distinguish between identical characters at different sequence positions.
-
-## Gradient Verification
-
-All analytical gradients are verified against numerical gradients using central finite differences:
+Every operation is checked against a numerical gradient computed by central finite differences:
 
 ```python
 from Forge.CalcLlama import grad_check
 from Forge.dtype import float64
 
-def mse_func(pred):
+def mse(pred):
     target = Tensor([1.0, 2.0, 3.0], dtype=float64)
     return ((pred - target) ** 2).mean()
 
 pred = Tensor([1.5, 2.5, 3.5], dtype=float64, requires_grad=True)
-assert grad_check(mse_func, [pred])
+assert grad_check(mse, [pred])
 ```
 
-Gradient checking uses `float64` to avoid false failures from `float32` precision limitations. The double-sided finite difference formula `f(x) = lim(h->0) (f(x+h) - f(x-h)) / 2h` provides an accuracy proportional to h² compared to h for one-sided differences which is better for small values of h.
+The two-sided difference `(f(x + h) - f(x - h)) / 2h` has error proportional to h squared, against h for the one-sided version. Checks run in float64 so that float32 rounding does not produce false failures.
 
-## Technical Decisions
+This caught a bug where a manual tensor slice in the attention path had silently detached the embedding layer from the graph. The model trained, the loss fell, and the embedding never moved.
 
-### Why typed arrays instead of Python lists?
-A Python float object uses 24 bytes (object header + reference count + value). A `float32` in a typed array uses 4 bytes which is a 6x memory reduction. For models with millions of parameters, this difference becomes significant.
+### Matrix multiplication backends
 
-### Why dynamic graphs over static graphs?
-Dynamic graphs (define-by-run) allow standard Python control flow in the forward pass: if statements, for loops, and variable-length sequences work naturally. 
+Matmul picks a path by problem size:
 
-### Why operator fusion at the graph level?
-Real ML compilers such as XLA, TorchInductor, and Core ML optimize by detecting operation patterns and replacing them with specialized fused kernels. The fusion pass in this library demonstrates this principle by detecting `Linear` to `ReLU` patterns and replacing them with a single `FusedLinearReLU` that performs matmul + bias + activation in one pass through the data.
+| Condition | Backend |
+|---|---|
+| float32, above the work threshold | Apple Metal GPU, through MPSMatrixMultiplication |
+| float32, below it | Apple Accelerate BLAS, through cblas_sgemm |
+| anything else | pure Python triple loop |
 
-## What I Learned
+The threshold exists because GPU dispatch has a fixed setup cost. For the small matrices in a character-level model, that cost is larger than the multiplication itself, so the GPU is slower than the CPU. The library measures the work and routes accordingly.
 
-Building this framework from scratch taught me:
+### The compiler
 
-- **How automatic differentiation works** at the implementation level; not just the math, but the graph construction, topological sorting, and gradient accumulation.
-- **Why numerical stability matters**: softmax overflow prevention, log(0) clamping, and why gradient checking requires float64.
-- **Optimizer dynamics**: how SGD momentum accelerates convergence, why Adam adapts per-parameter, and how learning rate affects training stability.
-- **Transformer internals**: how self-attention computes and propagates gradients through Query/Key/Value projections, softmax, and residual connections.
-- **Compiler-level optimization**: how pattern matching on computation graphs enables operator fusion, and why this matters for performance.
-- **Training dynamics**: sensitivity to initialization, the disconnect between loss and generation quality, and the importance of early stopping.
-
-## Installation
-
-```bash
-git clone https://github.com/SrihariSr/Forge.git
-cd Forge
-pip install -e .
+```mermaid
+flowchart LR
+    A["Python expression<br/>relu(a + b) * c"] --> B["Graph<br/>nodes, not numbers"]
+    B --> C["Fusion pass<br/>which ops share a pass"]
+    C --> D["Code generation<br/>write C, run gcc"]
+    D --> E["ctypes<br/>load the .so"]
+    E --> F["Execute<br/>one call per group"]
 ```
 
-No external dependencies required. Python 3.10+ only.
+Five stages, each in its own file under `deep learning compiler/`:
+
+| Stage | File | What it does |
+|---|---|---|
+| Graph | `graph.py` | Records operations as nodes instead of executing them |
+| Interpreter | `interpreter.py` | Runs the graph one node at a time, as a baseline |
+| Fusion | `fusion.py` | Groups element-wise chains that can share one memory pass |
+| Code generation | `codegen.py` | Writes C for each group, compiles it, loads it |
+| Execution | `compiled_run.py` | Runs the compiled plan |
+
+The fusion rule is that an intermediate can be absorbed into a group only if exactly one operation consumes it. A value read in two places has to exist in memory, so it cannot dissolve into a register.
+
+For `relu(a + b) * c` the compiler writes this, and nothing else in the project wrote it:
+
+```c
+void fused_kernel(const float* in0, const float* in1, const float* in2,
+                  float* out, int n){
+    for (int i = 0; i < n; i++) {
+        float t3 = (in0[i] + in1[i]);
+        float t4 = (t3 > 0.0f ? t3 : 0.0f);
+        out[i] = (t4 * in2[i]);
+    }
+}
+```
+
+Three kernels become one. Three passes over memory become one. The intermediates `t3` and `t4` live in registers and never reach main memory.
+
+Neither fusion nor cache blocking changes asymptotic complexity. Element-wise work stays at O(gN) for g operations on N elements, and matmul stays at O(mnp). What fusion changes is memory traffic, from O(gN) down to O(N). What blocking changes is the cache hit rate on the same number of accesses. Both are constant-factor improvements, and on modern hardware that is where the performance is, because arithmetic is rarely the limit.
+
+---
+
+## Bugs worth knowing about
+
+Building this from scratch meant every bug was mine to find. Three were instructive enough to write down.
+
+<details>
+<summary><b>The embedding layer that never trained</b></summary>
+
+Training ran, loss fell, output improved. The embedding weights never moved.
+
+A manual tensor slice in the attention path was copying values into a fresh tensor rather than going through a tracked operation. The autograd graph was severed at that point, so gradients flowing backwards stopped there and never reached the embedding. The rest of the network compensated well enough to hide it.
+
+Nothing about the training curve suggested a problem. It surfaced only when checking whether every layer was actually receiving a gradient, and the embedding's was empty. The fix was making the slice a proper differentiable operation.
+
+</details>
+
+<details>
+<summary><b>The model obsessed with the letter Z</b></summary>
+
+A name generator trained on 1,024 Pokemon names produced almost exclusively names beginning with Z.
+
+The cause was not the model. The training data was sorted alphabetically and never shuffled, so every epoch ended on the z-names and the final gradient steps of each pass pulled the weights toward z openings. Over twenty epochs that bias compounded.
+
+An earlier run on the first 500 names, which end around m, showed the same effect with different letters, which is what identified it. Shuffling the order each epoch fixed it in one line.
+
+</details>
+
+<details>
+<summary><b>The matmul that only worked on square matrices</b></summary>
+
+Flat array indexing means each matrix has its own row stride, and that stride is its own column count. Using the wrong one reads the wrong values, or reads past the end of the array.
+
+Square test data hides this completely, because when every dimension is equal, every stride is the same number. Two separate stride bugs passed all the square tests and produced values around 1e35 on the first non-square input.
+
+The test suite now uses deliberately non-square shapes such as 2x3 @ 3x4, where all three dimensions differ.
+
+</details>
+
+## Design decisions
+
+**Typed arrays over Python lists.** A Python float object costs 24 bytes. A float32 in an `array` costs 4. For a model with hundreds of thousands of parameters that ratio matters.
+
+**Define-by-run for the library, define-then-run for the compiler.** The library builds its graph as operations execute, which allows ordinary Python control flow in a forward pass. The compiler needs the opposite, because it has to see the whole computation before anything runs in order to find work worth fusing.
+
+**Per-head projections in multi-head attention.** The standard implementation makes one large projection and reshapes it into heads. Reshape in this library does not preserve gradients, so each head has its own smaller Query, Key and Value layers instead. Mathematically identical, and every step stays differentiable.
+
+**A large negative number instead of negative infinity in the causal mask.** Softmax subtracts the row maximum for numerical stability. With true negative infinity that subtraction produces NaN. Using -1e30 gives the same effect without the arithmetic hazard.
+
+---
+
+## Limitations
+
+The core library is pure Python, so it is orders of magnitude slower than a production framework. That is the point of the exercise, but it is worth stating plainly.
+
+The GPT processes one sequence at a time. Batching was implemented and verified but is not in this branch.
+
+The compiler handles the forward pass over five operations on one CPU core, with no autograd and no SIMD.
+
+Metal and Accelerate backends require macOS and PyObjC. Everything falls back to pure Python elsewhere.
+
+---
+
+## Repository layout
+
+```
+Forge/
+  tensor.py               Tensor class, broadcasting, operator overloading
+  dtype.py                float32 and float64 definitions
+  serialization.py        save and load weights
+  CalcLlama/
+    engine.py             Function base class, the autograd core
+    operations.py         differentiable operations and their gradients
+    grad_check.py         numerical gradient verification
+    fusion.py             graph-level Linear plus ReLU fusion
+    mps_backend.py        Apple Metal GPU matmul
+    accelerate_backend.py Apple Accelerate BLAS matmul
+
+NeuralNetwork/
+  module.py               Module base class, parameter registration
+  layers.py               Linear, Embedding, LayerNorm, MultiHeadAttention, GPT
+  losses.py               MSE, BCE, CrossEntropy
+  parameter.py            trainable tensor wrapper
+
+Optim/
+  optimizer.py            SGD with momentum, Adam
+
+deep learning compiler/
+  graph.py                computation graph representation
+  fusion.py               fusion planning pass
+  codegen.py              C source generation and run-time compilation
+  interpreter.py          baseline node-by-node execution
+  compiled_run.py         compiled plan execution
+  kernels.c               hand-written C kernels, including blocked matmul
+  benchmark.py            performance measurement
+
+train_shakespeare.py      data-parallel training across CPU cores
+resume_shakespeare.py     continue training from a checkpoint
+pokemon_names.py          character-level name generation
+```
+
+---
+
+Built by **Srihari Srinivasan**, from an autograd engine to a compiler that writes its own kernels.
+
+[GitHub](https://github.com/SrihariSr) · [LinkedIn](https://linkedin.com/in/sriharisrini)
