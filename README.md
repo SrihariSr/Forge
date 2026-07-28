@@ -354,4 +354,4 @@ pokemon_names.py          character-level name generation
 
 Built by **Srihari Srinivasan**, from an autograd engine to a compiler that writes its own kernels.
 
-[GitHub](https://github.com/SrihariSr) · [LinkedIn](https://linkedin.com/in/sriharisrini)
+[LinkedIn](https://linkedin.com/in/sriharisrini)
