@@ -87,9 +87,47 @@ Be false and by the news of him.
 
 ### Option pricing
 
-A call option pays the amount a share finishes above an agreed level, and nothing if it finishes below. That payout, `max(price - strike, 0)`, is exactly ReLU, so the whole pricing routine runs as a chain of tensor operations the library already had.
+A call option pays the amount a share finishes above an agreed level $K$, and nothing if it finishes below:
 
-The method is simulation. Generate a few hundred thousand possible futures for the share price, work out the payout in each, average them, and discount back to today.
+$$\Phi(S_T) \;=\; \max(S_T - K,\, 0) \;=\; (S_T - K)^{+} \;=\; \mathrm{ReLU}(S_T - K)$$
+
+The payoff *is* the rectifier. The same function that keeps gradients alive in a neural network is the one that determines what a derivative pays, so the whole pricing routine runs as a chain of tensor operations the library already had.
+
+Under the risk-neutral measure $\mathbb{Q}$ the price today is a discounted expectation,
+
+$$V_0 \;=\; e^{-rT}\,\mathbb{E}^{\mathbb{Q}}\!\left[\Phi(S)\right]$$
+
+and the share is modelled by geometric Brownian motion,
+
+$$dS_t = r\,S_t\,dt + \sigma S_t\,dW_t$$
+
+Applying Itô's lemma to $\ln S_t$ removes the state dependence and integrates exactly, giving
+
+$$S_T \;=\; S_0 \exp\!\left[\left(r - \tfrac{1}{2}\sigma^{2}\right)T + \sigma\sqrt{T}\,Z\right], \qquad Z \sim \mathcal{N}(0,1)$$
+
+The $-\tfrac{1}{2}\sigma^2$ term is the Itô correction, and it is what makes $\mathbb{E}[S_T] = S_0 e^{rT}$ rather than something larger.
+
+The expectation is then estimated by simulation. Draw $n$ independent $Z^{(i)}$, evaluate the payoff on each resulting path, and average:
+
+$$\hat{V}_n \;=\; \frac{e^{-rT}}{n}\sum_{i=1}^{n} \Phi\!\left(S_T^{(i)}\right)$$
+
+By the strong law of large numbers $\hat{V}_n \to V_0$ almost surely, and by the central limit theorem the error is
+
+$$\hat{V}_n - V_0 \;\sim\; \mathcal{N}\!\left(0,\; \frac{\sigma_\Phi^{2}}{n}\right), \qquad \mathrm{SE}(\hat{V}_n) = \frac{\sigma_\Phi}{\sqrt{n}} = O\!\left(n^{-1/2}\right)$$
+
+so a hundredfold increase in paths buys roughly a tenfold reduction in error, and the convergence table below shows exactly that. Note the rate is independent of dimension, which is why simulation remains viable for payoffs where deterministic quadrature does not.
+
+Normal draws come from the Box-Muller transform, since the library has no dependency that provides them. From two independent uniforms $U_1, U_2 \sim \mathcal{U}(0,1)$,
+
+$$Z_0 = \sqrt{-2\ln U_1}\,\cos(2\pi U_2), \qquad Z_1 = \sqrt{-2\ln U_1}\,\sin(2\pi U_2)$$
+
+are independent standard normals. The construction is the polar form of the Gaussian: $R^2 = -2\ln U_1$ is exponential with mean 2, which is precisely the $\chi^2_2$ distribution of $Z_0^2 + Z_1^2$, and the angle is uniform. Both outputs are kept, halving the work.
+
+Variance is reduced further by antithetic variates, pairing each draw with its reflection:
+
+$$\hat{V}^{\text{anti}} = \frac{1}{2}\left[\Phi(Z) + \Phi(-Z)\right], \qquad \mathrm{Var} = \frac{1}{2}\Big(\mathrm{Var}\,\Phi(Z) + \mathrm{Cov}\big(\Phi(Z),\Phi(-Z)\big)\Big)$$
+
+Since $Z$ and $-Z$ are identically distributed the estimator stays unbiased, and because $\Phi$ is monotone the covariance term is negative, so the variance strictly falls.
 
 ![Simulated price paths](prices.png)
 
@@ -104,11 +142,23 @@ Priced with a share at 100, a strike of 100, 20% volatility, 5% interest, one ye
 | Asian, geometric average | 5.6532 | 5.6411 |
 | Barrier, knocked out at 130 | 3.8233 | no formula used |
 
-The ordinary call and the geometric Asian both have closed forms, so the simulation can be checked rather than trusted. Once it agrees with those, the same machinery handles the two that have no formula at all, which is the entire reason banks run these.
+The ordinary call has the Black-Scholes closed form
 
-The prices also behave the way they should. Averaging smooths the journey, so a lucky spike at expiry is diluted by every other observation and both Asian options come out cheaper than the ordinary one. A barrier at 130 cancels a large share of the paths that would have paid best, leaving the option worth 37% of the ordinary call.
+$$C = S_0\,\Phi(d_1) - K e^{-rT}\Phi(d_2), \qquad d_{1,2} = \frac{\ln(S_0/K) + \left(r \pm \tfrac{1}{2}\sigma^{2}\right)T}{\sigma\sqrt{T}}$$
 
-Random draws from a bell curve come from the Box-Muller transform, implemented from the formula, since the library has no dependency that provides them.
+with $\Phi$ the standard normal CDF. The implementation satisfies put-call parity, $C - P = S_0 - Ke^{-rT}$, to machine precision, which is an independent check that does not rely on the simulation at all.
+
+**The exotics.** These depend on the whole path $\{S_{t_1},\dots,S_{t_m}\}$ rather than only $S_T$, which is why closed forms largely stop existing. The arithmetic and geometric Asian payoffs are
+
+$$\Phi_{\text{ari}} = \left(\frac{1}{m}\sum_{j=1}^{m} S_{t_j} - K\right)^{+}, \qquad \Phi_{\text{geo}} = \left(\Big(\prod_{j=1}^{m} S_{t_j}\Big)^{1/m} - K\right)^{+} = \left(\exp\!\Big[\tfrac{1}{m}\textstyle\sum_j \ln S_{t_j}\Big] - K\right)^{+}$$
+
+and the up-and-out barrier payoff is
+
+$$\Phi_{\text{bar}} = (S_T - K)^{+}\cdot\mathbf{1}\!\left\{\max_{1\le j\le m} S_{t_j} < B\right\}$$
+
+Only the geometric Asian admits a formula, and the reason is structural: a product of lognormals is lognormal, whereas a sum of them is not. That single case is enough to validate the path simulation, after which the other two are trusted.
+
+The measured prices obey the inequalities they must. Averaging is a contraction, so $\mathrm{Var}(\bar{S}) < \mathrm{Var}(S_T)$ and both Asian options are cheaper than the ordinary call. The AM-GM inequality $\big(\prod x_j\big)^{1/m} \le \tfrac{1}{m}\sum x_j$ forces $\Phi_{\text{geo}} \le \Phi_{\text{ari}}$ pathwise, hence the measured $5.6532$ against $5.8696$. And since $\mathbf{1}\{\cdot\} \le 1$ pointwise, the barrier option is dominated by the vanilla call, here at 37% of it.
 
 ### Compiler
 
@@ -211,6 +261,12 @@ python3 benchmark.py
 
 Every operation records itself in a graph as it runs. Calling `backward()` walks that graph in reverse topological order, applying the chain rule at each node and accumulating gradients into the leaves.
 
+For a scalar loss $L$ and a node $x$ feeding consumers $y_1, \dots, y_m$, reverse mode accumulates
+
+$$\frac{\partial L}{\partial x} \;=\; \sum_{j=1}^{m} \frac{\partial L}{\partial y_j}\,\frac{\partial y_j}{\partial x}$$
+
+Each `Function` supplies only the local Jacobian-vector product $\bar{y} \mapsto \bar{y}\,\partial y/\partial x$, never the full Jacobian. For a graph with $V$ nodes the whole backward pass costs $O(V)$ and evaluates $\nabla L$ for every parameter simultaneously, which is the property that makes training feasible at all.
+
 Adding a new differentiable operation means subclassing `Function` and writing `forward` and `backward`. Anything composed from existing operations gets its gradient for free, which is why `LayerNorm` has no backward method of its own.
 
 ### Gradient verification
@@ -229,11 +285,75 @@ pred = Tensor([1.5, 2.5, 3.5], dtype=float64, requires_grad=True)
 assert grad_check(mse, [pred])
 ```
 
-The two-sided difference `(f(x + h) - f(x - h)) / 2h` has error proportional to h squared, against h for the one-sided version. Checks run in float64 so that float32 rounding does not produce false failures.
+The check compares the analytical gradient against the central difference
+
+$$\frac{\partial f}{\partial x_i} \;\approx\; \frac{f(\mathbf{x} + h\mathbf{e}_i) - f(\mathbf{x} - h\mathbf{e}_i)}{2h}$$
+
+Expanding both terms as Taylor series about $\mathbf{x}$ cancels the even-order terms, leaving truncation error $O(h^2)$ against $O(h)$ for the one-sided difference $\left(f(x+h)-f(x)\right)/h$. Against that, floating-point cancellation contributes roughly $O(\varepsilon_{\text{mach}}/h)$, so total error is minimised near $h \sim \varepsilon_{\text{mach}}^{1/3}$. The implementation uses $h = 10^{-3}$ with a relative tolerance of $10^{-2}$, and runs in float64 so that float32 rounding does not produce false failures.
 
 This caught a bug where a manual tensor slice in the attention path had silently detached the embedding layer from the graph. The model trained, the loss fell, and the embedding never moved.
 
+### The transformer
+
+Each block is pre-norm with residual connections, so for a block $\ell$
+
+$$h' = h + \mathrm{MHA}\!\left(\mathrm{LN}(h)\right), \qquad h_{\ell+1} = h' + W_2\,\mathrm{GELU}\!\left(W_1\,\mathrm{LN}(h')\right)$$
+
+Writing it as $h_{\ell+1} = h_\ell + F(h_\ell)$ makes the reason for residuals explicit: since $\partial h_{\ell+1}/\partial h_\ell = I + \partial F/\partial h_\ell$, the gradient reaching layer $\ell$ from layer $L$ is
+
+$$\frac{\partial L}{\partial h_\ell} = \frac{\partial L}{\partial h_L}\prod_{j=\ell}^{L-1}\left(I + \frac{\partial F_j}{\partial h_j}\right)$$
+
+The identity term keeps that product from collapsing to zero, which is what makes depth trainable.
+
+**Attention.** With $Q = XW_Q$, $K = XW_K$, $V = XW_V$ projected to $d_k = d_{\text{model}}/h$ per head,
+
+$$\mathrm{Attention}(Q,K,V) \;=\; \mathrm{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}} + M\right)V, \qquad M_{ij} = \begin{cases} 0 & j \le i \\ -\infty & j > i \end{cases}$$
+
+The scaling by $\sqrt{d_k}$ is not cosmetic. If the entries of $q$ and $k$ are independent with mean $0$ and variance $1$, then $\mathrm{Var}(q \cdot k) = d_k$, so without the division the logits grow like $\sqrt{d_k}$ and push softmax into a regime where its Jacobian vanishes. Dividing restores unit variance.
+
+The mask $M$ is what makes the model causal: setting future logits to $-\infty$ sends their softmax weights to exactly zero, so position $i$ can attend only to $j \le i$. In practice $-10^{30}$ is used rather than true $-\infty$, because the stable softmax below would otherwise evaluate $-\infty - (-\infty)$ and produce NaN.
+
+**Softmax**, evaluated in the shift-invariant form
+
+$$\mathrm{softmax}(x)_i \;=\; \frac{\exp(x_i - \max_j x_j)}{\sum_k \exp(x_k - \max_j x_j)}$$
+
+which is algebraically identical to the naive form but never overflows, since every exponent is at most $0$.
+
+**LayerNorm**, over the $d$ features of a single row,
+
+$$\mathrm{LN}(x)_i = \gamma_i\,\frac{x_i - \mu}{\sqrt{\sigma^2 + \epsilon}} + \beta_i, \qquad \mu = \frac{1}{d}\sum_{j=1}^{d} x_j, \quad \sigma^2 = \frac{1}{d}\sum_{j=1}^{d}(x_j - \mu)^2$$
+
+with $\epsilon = 10^{-5}$ guarding the degenerate case $\sigma^2 = 0$. Note that $\mathrm{LN}$ has no hand-written backward pass in this library: it is composed entirely from differentiable primitives, so the engine derives $\partial\mathrm{LN}/\partial x$ by the chain rule alone.
+
+**GELU**, in the tanh approximation
+
+$$\mathrm{GELU}(x) = \frac{1}{2}x\left(1 + \tanh\!\left[\sqrt{\tfrac{2}{\pi}}\left(x + 0.044715\,x^{3}\right)\right]\right)$$
+
+approximating the exact $x\,\Phi(x)$ to within $4.7 \times 10^{-4}$ on $[-4, 4]$. Unlike $\mathrm{ReLU}$, it is smooth everywhere, so no unit has identically zero gradient.
+
+**Objective.** Training minimises the mean cross-entropy over the $T$ positions of a sequence,
+
+$$\mathcal{L} = -\frac{1}{T}\sum_{t=1}^{T} \log p_{t,y_t}, \qquad p_t = \mathrm{softmax}(z_t)$$
+
+**Adam** then updates each parameter by
+
+$$m_t = \beta_1 m_{t-1} + (1-\beta_1)g_t, \qquad v_t = \beta_2 v_{t-1} + (1-\beta_2)g_t^{2}$$
+
+$$\hat{m}_t = \frac{m_t}{1-\beta_1^{t}}, \qquad \hat{v}_t = \frac{v_t}{1-\beta_2^{t}}, \qquad \theta_t = \theta_{t-1} - \alpha\,\frac{\hat{m}_t}{\sqrt{\hat{v}_t} + \epsilon}$$
+
+The bias correction matters most early on: $m_0 = v_0 = 0$ biases the raw moments toward zero, and dividing by $1 - \beta^{t}$ removes exactly that bias.
+
 ### Matrix multiplication backends
+
+For $A \in \mathbb{R}^{m \times k}$ and $B \in \mathbb{R}^{k \times n}$ the product is
+
+$$C_{ij} \;=\; \sum_{p=0}^{k-1} A_{ip} B_{pj}, \qquad C \in \mathbb{R}^{m \times n}$$
+
+costing $2mnk$ floating-point operations. Tensors are stored flat and row-major, so each matrix carries its own stride equal to its column count:
+
+$$A_{ip} \mapsto A[\,ik + p\,], \qquad B_{pj} \mapsto B[\,pn + j\,], \qquad C_{ij} \mapsto C[\,in + j\,]$$
+
+Using the wrong stride is invisible when $m = k = n$, because all three coincide. That is exactly how two stride bugs survived a square test suite.
 
 Matmul picks a path by problem size:
 
@@ -283,7 +403,27 @@ void fused_kernel(const float* in0, const float* in1, const float* in2,
 
 Three kernels become one. Three passes over memory become one. The intermediates `t3` and `t4` live in registers and never reach main memory.
 
-Neither fusion nor cache blocking changes asymptotic complexity. Element-wise work stays at O(gN) for g operations on N elements, and matmul stays at O(mnp). What fusion changes is memory traffic, from O(gN) down to O(N). What blocking changes is the cache hit rate on the same number of accesses. Both are constant-factor improvements, and on modern hardware that is where the performance is, because arithmetic is rarely the limit.
+**Why fusion helps, precisely.** Consider a chain of $g$ element-wise operations over tensors of $N$ elements. Executed one at a time, each operation reads its inputs and writes a full intermediate, so the memory traffic is
+
+$$Q_{\text{unfused}} \;=\; \Theta(gN) \text{ words}$$
+
+Fused into a single loop, every intermediate lives in a register and only the true inputs and the final output touch memory:
+
+$$Q_{\text{fused}} \;=\; \Theta(N) \text{ words}$$
+
+The arithmetic is unchanged at $\Theta(gN)$ flops in both cases. What rises is the arithmetic intensity
+
+$$I \;=\; \frac{\text{flops}}{\text{bytes moved}}, \qquad I_{\text{fused}} \;\approx\; g \cdot I_{\text{unfused}}$$
+
+By the roofline model, attainable performance is $\min(\pi,\; I \cdot \beta)$ for peak compute $\pi$ and memory bandwidth $\beta$. Element-wise work sits far to the left of the ridge point $I^{*} = \pi/\beta$, so it is bandwidth-bound and multiplying $I$ by $g$ translates directly into speed. This also predicts the measured behaviour: while the working set fits in cache the effective $\beta$ is large and fusion barely matters, and the benefit only appears once the arrays exceed cache.
+
+**Why blocking helps.** Cache blocking does not change the $\Theta(mnk)$ operation count at all. With a tile of size $b$ chosen so that $3b^2 \le M$ for cache size $M$, the classic bound of Hong and Kung gives compulsory traffic
+
+$$Q_{\text{blocked}} \;=\; \Theta\!\left(\frac{mnk}{\sqrt{M}}\right)$$
+
+against $\Theta(mnk)$ for the naive triple loop, an improvement of $\Theta(\sqrt{M})$ in traffic while the flop count stays fixed.
+
+Neither transformation improves asymptotic time complexity. Both are constant-factor improvements in the memory hierarchy, and on modern hardware that is where the performance is, because arithmetic is rarely the limit.
 
 ---
 
