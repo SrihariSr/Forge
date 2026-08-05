@@ -467,3 +467,8 @@ class Tensor:
     def unsqueeze_batch(self):
         from Forge.CalcLlama.operations import UnsqueezeBatch
         return self._apply_op(UnsqueezeBatch)
+    
+    def exp(self):
+        from Forge.CalcLlama.operations import Exp
+        return self._apply_op(Exp)
+    

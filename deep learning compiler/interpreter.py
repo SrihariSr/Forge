@@ -14,6 +14,8 @@ _lib.relu.argtypes = [_FP, _FP, ctypes.c_int]
 _lib.relu.restype = None
 _lib.matmul.argtypes = [_FP, _FP, _FP, ctypes.c_int, ctypes.c_int, ctypes.c_int]
 _lib.matmul.restype = None
+_lib.exp_kernel.argtypes = [_FP, _FP, ctypes.c_int]
+_lib.exp_kernel.restype = None
 
 def _addr(arr):
     """
@@ -80,6 +82,12 @@ def run(root, feeds) -> Tensor:
             _, n = b.shape
             out = _empty((m, n))
             _lib.matmul(_addr(a.data), _addr(b.data), _addr(out.data), m, k, n)
+            values[node] = out
+
+        elif node.op == "exp":
+            x = values[node.inputs[0]]
+            out = _empty(x.shape)
+            _lib.exp_kernel(_addr(x.data), _addr(out.data), x.size)
             values[node] = out
 
         else:

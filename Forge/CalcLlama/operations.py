@@ -1019,3 +1019,45 @@ class UnsqueezeBatch(Function):
         result.grad = None
         result._grad_fn = None
         return (result,)
+
+class Exp(Function):
+    """
+    Element-wise e^x.
+    """
+    def forward(self, x):
+        self.inputs = [x]
+        from Forge.tensor import Tensor
+        import math
+
+        new_data = _array.array(x.dtype.typecode, [math.exp(d) for d in x._data])
+
+        result = Tensor.__new__(Tensor)
+        result._data = new_data
+        result.shape = x.shape
+        result.dtype = x.dtype
+        result.requires_grad = False
+        result.grad = None
+        result._grad_fn = None
+
+        self.save_for_backward(result)
+
+        return result
+    
+    def backward(self, grad_output):
+        exp_x = self.saved_tensors[0]
+        from Forge.tensor import Tensor
+
+        grad_data = _array.array(
+            exp_x.dtype.typecode,
+            [g * e for g, e in zip(grad_output._data, exp_x._data)]
+        )
+        
+        result = Tensor.__new__(Tensor)
+        result._data = grad_data
+        result.shape = exp_x.shape
+        result.dtype = exp_x.dtype
+        result.requires_grad = False
+        result.grad = None
+        result._grad_fn = None
+
+        return (result,)

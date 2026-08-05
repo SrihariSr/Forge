@@ -39,7 +39,13 @@ class Node:
     
     def __mul__(self, other):
         return Node("mul", [self, _wrap(other)])
-    
+
+    def exp(self):
+        """
+        Element-wise e to the power of the node's value 
+        """
+        return Node("exp", [self])
+
     def __repr__(self):
         ins = ", ".join(inp.name for inp in self.inputs)
         return f"{self.name} = {self.op}({ins})"

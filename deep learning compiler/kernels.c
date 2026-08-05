@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <string.h>
+#include <math.h>
 
 /* ELEMENT-WISE OPERATIONS */
 void add(const float* a, const float* b, float* out, int n){
@@ -23,6 +24,12 @@ void mul(const float* a, const float* b, float* out, int n){
 void relu(const float* x, float* out, int n){
     for (int i = 0; i < n; i++){
         out[i] = x[i] > 0.0f ? x[i] : 0.0f;
+    }
+}
+
+void exp_kernel(const float* x, float* out, int n){
+    for (int i = 0; i < n; i++){
+        out[i] = expf(x[i]);
     }
 }
 

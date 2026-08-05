@@ -7,7 +7,8 @@ C_EXP = {
     "add": "({} + {})",
     "sub": "({} - {})",
     "mul": "({} * {})",
-    "relu": "({0} > 0.0f ? {0} : 0.0f)"
+    "relu": "({0} > 0.0f ? {0} : 0.0f)",
+    "exp": "expf({})" # expf is the float version of e^x in C's standard library
 }
 
 def generate_c(group, group_inputs, func_name="fused_kernel") -> list:

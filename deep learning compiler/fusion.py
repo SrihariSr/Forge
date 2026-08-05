@@ -1,6 +1,6 @@
 from graph import topological_order
 
-ELEMENTWISE_OPS = {"add", "sub", "mul", "relu"}
+ELEMENTWISE_OPS = {"add", "sub", "mul", "relu", "exp"}
 
 def count_consumers(root) -> dict:
     """
