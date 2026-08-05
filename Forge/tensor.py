@@ -301,7 +301,7 @@ class Tensor:
     def __rsub__(self, other):
         if isinstance(other, (int, float)):
             other = Tensor(other)
-        return self._apply_op(Sub, other)
+        return other._apply_op(Sub, self)
 
     def __rmul__(self, other):
         if isinstance(other, (int, float)):

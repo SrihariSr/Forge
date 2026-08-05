@@ -109,7 +109,7 @@ def asian_call(S0, K, r, sigma, T, paths, steps=100, seed=66, geometric=False) -
     if geometric:
         average = (log_sum / steps).exp()
     else:
-        average = log_sum / steps
+        average = total / steps
     
     payoff = (average - K).relu()
     return math.exp(-r * T) * payoff.mean()._data[0]
@@ -128,7 +128,7 @@ def barrier_call(S0, K, B, r, sigma, T, paths, steps=100, seed=66) -> float:
     breached = ((highest - B).relu() * 1e13).clamp(0.0, 1.0)
 
     # complimenting `breached`
-    alive = 1.0 - breached
+    alive = breached * -1.0 + 1.0
 
     return math.exp(-r * T) * (payoff * alive).mean()._data[0]
 

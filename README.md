@@ -18,6 +18,8 @@ No PyTorch, no TensorFlow, no NumPy in the core. Every operation, from the autog
 
 **A deep learning compiler.** A separate front end that builds a graph, plans operator fusion, generates C source, compiles it with gcc, and loads it back through ctypes.
 
+**Monte Carlo option pricing.** Derivatives priced on the tensor library, including the random number generation, and checked against the closed-form answers where those exist.
+
 ---
 
 ## Results
@@ -82,6 +84,31 @@ Be false and by the news of him.
 ```
 
 </details>
+
+### Option pricing
+
+A call option pays the amount a share finishes above an agreed level, and nothing if it finishes below. That payout, `max(price - strike, 0)`, is exactly ReLU, so the whole pricing routine runs as a chain of tensor operations the library already had.
+
+The method is simulation. Generate a few hundred thousand possible futures for the share price, work out the payout in each, average them, and discount back to today.
+
+![Simulated price paths](prices.png)
+
+Six views of 200,000 simulated futures. Red paths finish above the strike and pay out, grey ones expire worthless. The fan shows the range of outcomes widening with time, which is why an option costs anything at all. The gold bars in the last panel are the payouts themselves.
+
+Priced with a share at 100, a strike of 100, 20% volatility, 5% interest, one year to expiry:
+
+| Option | Simulated | Exact |
+|---|---|---|
+| Ordinary call | 10.4525 | 10.4506 |
+| Asian, ordinary average | 5.8696 | no formula exists |
+| Asian, geometric average | 5.6532 | 5.6411 |
+| Barrier, knocked out at 130 | 3.8233 | no formula used |
+
+The ordinary call and the geometric Asian both have closed forms, so the simulation can be checked rather than trusted. Once it agrees with those, the same machinery handles the two that have no formula at all, which is the entire reason banks run these.
+
+The prices also behave the way they should. Averaging smooths the journey, so a lucky spike at expiry is diluted by every other observation and both Asian options come out cheaper than the ordinary one. A barrier at 130 cancels a large share of the paths that would have paid best, leaving the option worth 37% of the ordinary call.
+
+Random draws from a bell curve come from the Box-Muller transform, implemented from the formula, since the library has no dependency that provides them.
 
 ### Compiler
 
@@ -158,6 +185,15 @@ python3 sidequests/pokemon/pokemon_names.py           # invent Pokemon names
 python3 sidequests/shakespeare/train_shakespeare.py   # data-parallel Shakespeare training
 python3 sidequests/shakespeare/resume_shakespeare.py  # continue from a checkpoint
 ```
+
+### Option pricing
+
+```bash
+pip install matplotlib
+python3 sidequests/options/price_report.py
+```
+
+Prints the convergence table and writes `prices.png`.
 
 ### The compiler
 
@@ -285,6 +321,19 @@ Flat array indexing means each matrix has its own row stride, and that stride is
 Square test data hides this completely, because when every dimension is equal, every stride is the same number. Two separate stride bugs passed all the square tests and produced values around 1e35 on the first non-square input.
 
 The test suite now uses deliberately non-square shapes such as 2x3 @ 3x4, where all three dimensions differ.
+
+</details>
+
+<details>
+<summary><b>The subtraction that ran backwards</b></summary>
+
+Pricing a barrier option needs a flag that is 1 for paths which survived and 0 for those knocked out. The obvious way to write it is `1.0 - breached`.
+
+That returned the wrong sign, and the option came out with a negative price.
+
+When Python evaluates `1.0 - tensor`, the float does not know how to subtract a tensor, so it hands the job back to the tensor through `__rsub__`. The implementation computed `self - other` rather than `other - self`, silently reversing the operands. Addition and multiplication were unaffected because they commute, so only subtraction and division could expose it.
+
+The lesson is that reflected operators are the one place where writing the obvious implementation gives the wrong answer, precisely because the arguments arrive swapped.
 
 </details>
 
