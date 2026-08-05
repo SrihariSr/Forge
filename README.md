@@ -148,17 +148,17 @@ $$C = S_0\,\Phi(d_1) - K e^{-rT}\Phi(d_2), \qquad d_{1,2} = \frac{\ln(S_0/K) + \
 
 with $\Phi$ the standard normal CDF. The implementation satisfies put-call parity, $C - P = S_0 - Ke^{-rT}$, to machine precision, which is an independent check that does not rely on the simulation at all.
 
-**The exotics.** These depend on the whole path $\{S_{t_1},\dots,S_{t_m}\}$ rather than only $S_T$, which is why closed forms largely stop existing. The arithmetic and geometric Asian payoffs are
+**The exotics.** These depend on the whole path $\lbrace S_{t_1},\dots,S_{t_m} \rbrace$ rather than only $S_T$, which is why closed forms largely stop existing. The arithmetic and geometric Asian payoffs are
 
 $$\Phi_{\text{ari}} = \left(\frac{1}{m}\sum_{j=1}^{m} S_{t_j} - K\right)^{+}, \qquad \Phi_{\text{geo}} = \left(\Big(\prod_{j=1}^{m} S_{t_j}\Big)^{1/m} - K\right)^{+} = \left(\exp\!\Big[\tfrac{1}{m}\textstyle\sum_j \ln S_{t_j}\Big] - K\right)^{+}$$
 
 and the up-and-out barrier payoff is
 
-$$\Phi_{\text{bar}} = (S_T - K)^{+}\cdot\mathbf{1}\!\left\{\max_{1\le j\le m} S_{t_j} < B\right\}$$
+$$\Phi_{\text{bar}} = (S_T - K)^{+}\cdot\mathbf{1}\!\left\lbrace \max_{1\le j\le m} S_{t_j} < B \right\rbrace$$
 
 Only the geometric Asian admits a formula, and the reason is structural: a product of lognormals is lognormal, whereas a sum of them is not. That single case is enough to validate the path simulation, after which the other two are trusted.
 
-The measured prices obey the inequalities they must. Averaging is a contraction, so $\mathrm{Var}(\bar{S}) < \mathrm{Var}(S_T)$ and both Asian options are cheaper than the ordinary call. The AM-GM inequality $\big(\prod x_j\big)^{1/m} \le \tfrac{1}{m}\sum x_j$ forces $\Phi_{\text{geo}} \le \Phi_{\text{ari}}$ pathwise, hence the measured $5.6532$ against $5.8696$. And since $\mathbf{1}\{\cdot\} \le 1$ pointwise, the barrier option is dominated by the vanilla call, here at 37% of it.
+The measured prices obey the inequalities they must. Averaging is a contraction, so $\mathrm{Var}(\bar{S}) < \mathrm{Var}(S_T)$ and both Asian options are cheaper than the ordinary call. The AM-GM inequality $\big(\prod x_j\big)^{1/m} \le \tfrac{1}{m}\sum x_j$ forces $\Phi_{\text{geo}} \le \Phi_{\text{ari}}$ pathwise, hence the measured $5.6532$ against $5.8696$. And since $\mathbf{1}\lbrace\cdot\rbrace \le 1$ pointwise, the barrier option is dominated by the vanilla call, here at 37% of it.
 
 ### Compiler
 
@@ -307,7 +307,7 @@ The identity term keeps that product from collapsing to zero, which is what make
 
 **Attention.** With $Q = XW_Q$, $K = XW_K$, $V = XW_V$ projected to $d_k = d_{\text{model}}/h$ per head,
 
-$$\mathrm{Attention}(Q,K,V) \;=\; \mathrm{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}} + M\right)V, \qquad M_{ij} = \begin{cases} 0 & j \le i \\ -\infty & j > i \end{cases}$$
+$$\mathrm{Attention}(Q,K,V) \;=\; \mathrm{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}} + M\right)V, \qquad M_{ij} = \begin{cases} 0 & j \le i \cr -\infty & j > i \end{cases}$$
 
 The scaling by $\sqrt{d_k}$ is not cosmetic. If the entries of $q$ and $k$ are independent with mean $0$ and variance $1$, then $\mathrm{Var}(q \cdot k) = d_k$, so without the division the logits grow like $\sqrt{d_k}$ and push softmax into a regime where its Jacobian vanishes. Dividing restores unit variance.
 
