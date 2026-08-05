@@ -154,9 +154,9 @@ optimizer.step()
 ### Training runs
 
 ```bash
-python3 pokemon_names.py       # invent Pokemon names
-python3 train_shakespeare.py   # data-parallel Shakespeare training
-python3 resume_shakespeare.py  # continue from a checkpoint
+python3 examples/pokemon/pokemon_names.py           # invent Pokemon names
+python3 examples/shakespeare/train_shakespeare.py   # data-parallel Shakespeare training
+python3 examples/shakespeare/resume_shakespeare.py  # continue from a checkpoint
 ```
 
 ### The compiler
@@ -345,9 +345,15 @@ deep learning compiler/
   kernels.c               hand-written C kernels, including blocked matmul
   benchmark.py            performance measurement
 
-train_shakespeare.py      data-parallel training across CPU cores
-resume_shakespeare.py     continue training from a checkpoint
-pokemon_names.py          character-level name generation
+examples/
+  shakespeare/
+    train_shakespeare.py  data-parallel training across CPU cores
+    resume_shakespeare.py continue training from a checkpoint
+  pokemon/
+    pokemon_names.py      character-level name generation
+  options/
+    options.py            Black-Scholes, Monte Carlo, Asian and barrier pricing
+    price_report.py       convergence table and charts
 ```
 
 ---

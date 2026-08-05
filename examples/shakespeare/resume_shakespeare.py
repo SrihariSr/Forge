@@ -1,5 +1,7 @@
-import sys
-sys.path.insert(0, ".")
+import sys, os
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(os.path.dirname(HERE))
+sys.path.insert(0, ROOT)
 
 import math
 import os
@@ -13,9 +15,9 @@ from NeuralNetwork.layers import GPT
 from NeuralNetwork.losses import CrossEntropyLoss
 from Optim.optimizer import Adam
 
-DATA_FILE = "shakespeare.txt"
-CHECKPOINT_IN = "shakespeare_checkpoint.pkl"
-CHECKPOINT_OUT = "shakespeare_checkpoint.pkl"   # overwrite the same file
+DATA_FILE = os.path.join(HERE, "shakespeare.txt")
+CHECKPOINT_IN = os.path.join(HERE, "shakespeare_checkpoint.pkl")
+CHECKPOINT_OUT = os.path.join(HERE, "shakespeare_checkpoint.pkl")   # overwrite the same file
 
 TRAIN_HOURS = 2.0        # stop after this many hours
 

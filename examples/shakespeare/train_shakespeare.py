@@ -2,8 +2,10 @@
 Trains a GPT on Shakespeare using DATA-PARALLEL training across CPU cores.
 """
 
-import sys
-sys.path.insert(0, ".")
+import sys, os
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(os.path.dirname(HERE))
+sys.path.insert(0, ROOT)
 
 import array
 import math
@@ -19,7 +21,7 @@ from NeuralNetwork.losses import CrossEntropyLoss
 from Optim.optimizer import Adam
 
 # Config
-DATA_FILE = "shakespeare.txt"
+DATA_FILE = os.path.join(HERE, "shakespeare.txt")
 
 NUM_WORKERS = 8 # leave a core free for the OS and the parent process
 BATCH_SIZE = 24 # must divide evenly by NUM_WORKERS (26 = 13 x 2)
@@ -220,7 +222,7 @@ def main():
                 print("--- end ---\n", flush=True)
 
             if step % CHECKPOINT_EVERY == 0:
-                with open("shakespeare_checkpoint.pkl", "wb") as f:
+                with open(os.path.join(HERE, "shakespeare_checkpoint.pkl"), "wb") as f:
                     pickle.dump({
                         "weights": [list(p._data) for p in params],
                         "chars": chars,
@@ -234,7 +236,7 @@ def main():
         pool.close()
         pool.join()
 
-    with open("shakespeare_checkpoint.pkl", "wb") as f:
+    with open(os.path.join(HERE, "shakespeare_checkpoint.pkl"), "wb") as f:
         pickle.dump({
             "weights": [list(p._data) for p in params],
             "chars": chars,

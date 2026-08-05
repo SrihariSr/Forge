@@ -1,5 +1,7 @@
-import sys
-sys.path.insert(0, ".")
+import sys, os
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(os.path.dirname(HERE))
+sys.path.insert(0, ROOT)
 import math
 import time
 import random
@@ -21,7 +23,7 @@ EPOCHS = 11
 LR = 0.002
 TEMPERATURE = 0.6
 
-names = open("pokemon.txt").read().split()[:NAMES_LIMIT]
+names = open(os.path.join(HERE, "pokemon.txt")).read().split()[:NAMES_LIMIT]
 chars = ['.'] + sorted(set("".join(names)))
 char_to_id = {c: i for i, c in enumerate(chars)}
 id_to_char = {i: c for i, c in enumerate(chars)}

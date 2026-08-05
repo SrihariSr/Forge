@@ -5,3 +5,16 @@ __pycache__/
 *.pyc
 *.pyo
 .DS_Store
+
+# build artifacts
+*.so
+*.o
+*.dylib
+a.out
+
+# generated output
+*.png
+training_log.txt
+resume_log.txt
+transformer_weights.json
+watch_*
