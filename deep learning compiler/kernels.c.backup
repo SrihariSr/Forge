@@ -83,7 +83,7 @@ static void* matmul_worker(void* arg){
     const float* b = s -> b;
     float* out = s -> out;
     int n = s -> n;
-    int p = s -> p;
+    int p = s -> n;
 
     for (int i0 = s->row_start; i0 < s->row_end; i0 += BLOCK){
         for (int j0 = 0; j0 < n; j0 += BLOCK){
@@ -149,14 +149,14 @@ void matmul(const float* restrict a, const float* restrict b,
         // set by whichever thread finishes last, so balance matters.
         int my_blocks = blocks_each + (t < leftover ? 1 : 0);
 
-        int row_end = (next_block + my_blocks) * BLOCK;
-        if (row_end > m) row_end = m;
-
-        slices[t] = (Slice){
-            .a = a, .b = b, .out = out,
-            .n = n, .p = p,
-            .row_start = next_block * BLOCK, .row_end = row_end
-        };
+        slices[t].a = a;
+        slices[t].b = b;
+        slices[t].out = out;
+        slices[t].n = n;
+        slices[t].p = p;
+        slices[t].row_start = next_block * BLOCK;
+        slices[t].row_end   = (next_block + my_blocks) * BLOCK;
+        if (slices[t].row_end > m) slices[t].row_end = m;
 
         next_block += my_blocks;
     }

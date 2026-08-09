@@ -31,16 +31,27 @@ void matmul_naive(const float* a, const float* b, float* out, int m, int n, int 
 }
 """
 
-def bench(fn, reps = 3) -> float:
+def bench(fn, reps = 15, warmups = 3) -> float:
     """
-    Mean milliseconds per call, discarding the first run so one-off costs such
-    as page mapping do not skew the result.
+    Median milliseconds per call.
+
+    The median is used rather than the mean because a single unlucky run, where
+    the operating system schedules something else on the core, drags a mean
+    noticeably but barely moves a median.
+
+    Several warmup calls are discarded first. One is not always enough: BLAS in
+    particular spins up a thread pool and picks a kernel on its first call, and
+    that cost lands entirely on whichever measurement runs first.
     """
-    fn()
-    start = time.time()
-    for _ in range(reps):
+    for _ in range(warmups):
         fn()
-    return (time.time() - start) / reps * 1000.0
+    times = []
+    for _ in range(reps):
+        start = time.time()
+        fn()
+        times.append((time.time() - start) * 1000.0)
+    times.sort()
+    return times[len(times) // 2]
 
 def rand_tensor(shape) -> Tensor:
     """
@@ -162,14 +173,27 @@ def measure_matmul(naive) -> list:
 
     return rows
 
+def warm_blas():
+    """
+    Burn in the BLAS thread pool and kernel dispatch before anything is timed.
+
+    Without this the first BLAS call absorbs the whole start-up cost, which
+    produced a nonsense reading where a 256x256 multiply appeared to take
+    longer than a 512x512 one on eight times the work.
+    """
+    warm = numpy.random.rand(512, 512).astype(numpy.float32)
+    for _ in range(20):
+        _ = warm @ warm
+
 def measure_against_numpy(naive) -> list:
     """
-    Time the naive matmul, the compiled blocked matmul, and NumPy on the same
-    data. NumPy calls BLAS, decades of hand-tuned assembly, so it is the
-    yardstick that says how far the compiler actually got.
-    Returns rows of (size, naive, blocked, numpy).
+    Time the naive matmul, the compiled blocked matmul, and BLAS on the same
+    data. NumPy calls BLAS, which is decades of hand-tuned assembly using every
+    core, so it is the yardstick for how far the compiler actually got.
+    Returns rows of (size, naive, blocked, blas).
     """
     random.seed(4)
+    warm_blas()
     rows = []
 
     for size in (256, 512, 768):
@@ -191,7 +215,9 @@ def measure_against_numpy(naive) -> list:
                                                 _addr(slow_out.data), size, size, size))
         fast = bench(lambda: _lib.matmul(_addr(a.data), _addr(b.data),
                                          _addr(fast_out.data), size, size, size))
-        blas = bench(lambda: left @ right, 10)
+        # BLAS finishes in under a millisecond, so it needs many more
+        # repetitions than our kernels to give a stable reading.
+        blas = bench(lambda: left @ right, 200, warmups = 20)
         rows.append((size, slow, fast, blas))
 
     return rows
@@ -223,27 +249,34 @@ def measure_pipeline(naive) -> list:
 
 def print_numpy_table(rows):
     """
-    Show the naive matmul, the compiled one, and BLAS side by side. NumPy calls
-    BLAS, which is decades of hand-tuned assembly with SIMD and multithreading,
-    so the slowdown factor is a straight measure of how much ground the compiler
-    made up against production tooling.
+    Show the naive matmul, the compiled one, and BLAS side by side.
+
+    GFLOPS is reported alongside the times because it is comparable across
+    sizes in a way milliseconds are not: a 768 multiply does 27 times the work
+    of a 256 one, so its longer runtime says nothing on its own.
     """
     print()
     print("MATRIX MULTIPLICATION, MEASURED AGAINST BLAS (using NumPy)")
     print("  " + "\u2500" * 70)
-    print(f"{'size':<12}{'naive':>11}{'compiled':>11}{'BLAS':>10}"
-          f"{'slowdown against BLAS':>26}")
-    print(f"{'':<12}{'':>11}{'':>11}{'':>10}{'naive':>14}{'compiled':>12}")
+    print(f"{'size':<12}{'naive':>10}{'compiled':>10}{'BLAS':>9}"
+          f"{'GFLOPS':>18}{'BLAS is':>11}")
+    print(f"{'':<12}{'':>10}{'':>10}{'':>9}{'ours':>11}{'BLAS':>7}{'faster by':>11}")
     print("  " + "\u2500" * 70)
 
     for size, slow, fast, blas in rows:
         label = f"{size} x {size}"
-        print(f"{label:<12}{slow:>9.1f}ms{fast:>9.1f}ms{blas:>8.2f}ms"
-              f"{slow / blas:>13.0f}x{fast / blas:>11.0f}x")
+        # a size x size multiply is 2 * size^3 floating point operations
+        flops = 2.0 * size ** 3
+        ours_gf = flops / (fast / 1000.0) / 1e9
+        blas_gf = flops / (blas / 1000.0) / 1e9
+        print(f"{label:<12}{slow:>8.1f}ms{fast:>8.1f}ms{blas:>7.2f}ms"
+              f"{ours_gf:>11.0f}{blas_gf:>7.0f}{blas_gf / ours_gf:>10.1f}x")
 
     gains = [slow / fast for _, slow, fast, _ in rows]
     print("  " + "\u2500" * 70)
     print(f"The compiler closed the gap to BLAS by {sum(gains) / len(gains):.1f}x on average.")
+    print("BLAS uses every core and a register-blocked micro-kernel. This runs")
+    print("on one core, which is most of what is left.")
     print()
 
 def main():
