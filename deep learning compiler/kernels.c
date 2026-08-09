@@ -51,8 +51,18 @@ void exp_kernel(const float* x, float* out, int n){
     }
 }
 
-// 64x64 floats = 16 KB 
-#define BLOCK 64
+/*
+The best tile depends on the matrix, a larger tile givees each thread more work to
+do. more contigious work is better.
+
+Numbers are based on measurements on Apple M4 Max.
+*/
+
+static int block_for(int m){
+    if (m >= 512) return 96;
+    if (m >= 384) return 64;
+    return 32;
+}
 
 #define MAX_THREADS 32
 static int thread_count = 0;
@@ -62,6 +72,7 @@ static int cores(void){
         long n = sysconf(_SC_NPROCESSORS_ONLN);
         if (n < 1) {n = 1;}
         if (n > MAX_THREADS) {n = MAX_THREADS;}
+        if (n > 8) n = 8;
         thread_count = (int) n;
     }
     return thread_count;
@@ -73,6 +84,7 @@ typedef struct{
     float* out;
     int n;
     int p;
+    int block;
     int row_start;
     int row_end;
 } Slice;
@@ -84,14 +96,15 @@ static void* matmul_worker(void* arg){
     float* out = s -> out;
     int n = s -> n;
     int p = s -> p;
+    int block = s -> block;
 
-    for (int i0 = s->row_start; i0 < s->row_end; i0 += BLOCK){
-        for (int j0 = 0; j0 < n; j0 += BLOCK){
-            for (int k0 = 0; k0 < p; k0 += BLOCK){
+    for (int i0 = s->row_start; i0 < s->row_end; i0 += block){
+        for (int j0 = 0; j0 < n; j0 += block){
+            for (int k0 = 0; k0 < p; k0 += block){
 
-                int i_end = (i0 + BLOCK < s->row_end) ? i0 + BLOCK : s->row_end;
-                int j_end = (j0 + BLOCK < n) ? j0 + BLOCK : n;
-                int k_end = (k0 + BLOCK < p) ? k0 + BLOCK : p;
+                int i_end = (i0 + block < s->row_end) ? i0 + block : s->row_end;
+                int j_end = (j0 + block < n) ? j0 + block : n;
+                int k_end = (k0 + block < p) ? k0 + block : p;
 
                 for (int i = i0; i < i_end; i++){
                     for (int j = j0; j < j_end; j++){
@@ -116,9 +129,11 @@ void matmul(const float* restrict a, const float* restrict b,
     // Zero once, here, before any thread starts.
     memset(out, 0, (size_t)m * p * sizeof(float));
 
+    int block = block_for(m);
+
     // Rows are handed out in whole blocks, so the split stays aligned with the
     // blocking and each thread's cache behaviour is unchanged.
-    int total_blocks = (m + BLOCK - 1) / BLOCK;
+    int total_blocks = (m + block - 1) / block;
 
     int nthreads = cores();
     // Never more threads than there are blocks to give them.
@@ -129,7 +144,7 @@ void matmul(const float* restrict a, const float* restrict b,
     if (nthreads == 1){
         Slice s = {
             .a = a, .b = b, .out = out,
-            .n = n, .p = p,
+            .n = n, .p = p, .block = block,
             .row_start = 0, .row_end = m
         };
         matmul_worker(&s);
@@ -149,13 +164,13 @@ void matmul(const float* restrict a, const float* restrict b,
         // set by whichever thread finishes last, so balance matters.
         int my_blocks = blocks_each + (t < leftover ? 1 : 0);
 
-        int row_end = (next_block + my_blocks) * BLOCK;
+        int row_end = (next_block + my_blocks) * block;
         if (row_end > m) row_end = m;
 
         slices[t] = (Slice){
             .a = a, .b = b, .out = out,
-            .n = n, .p = p,
-            .row_start = next_block * BLOCK, .row_end = row_end
+            .n = n, .p = p, .block = block,
+            .row_start = next_block * block, .row_end = row_end
         };
 
         next_block += my_blocks;

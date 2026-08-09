@@ -208,8 +208,8 @@ def measure_against_numpy(naive) -> list:
 
         naive.matmul_naive(_addr(a.data), _addr(b.data), _addr(slow_out.data), size, size, size)
         _lib.matmul(_addr(a.data), _addr(b.data), _addr(fast_out.data), size, size, size)
-        ours = numpy.frombuffer(fast_out.data, dtype = numpy.float32).reshape(size, size)
-        assert float(numpy.abs(expected - ours).max()) < 1e-2
+        mine = numpy.frombuffer(fast_out.data, dtype = numpy.float32).reshape(size, size)
+        assert float(numpy.abs(expected - mine).max()) < 1e-2
 
         slow = bench(lambda: naive.matmul_naive(_addr(a.data), _addr(b.data),
                                                 _addr(slow_out.data), size, size, size))
@@ -260,7 +260,7 @@ def print_numpy_table(rows):
     print("  " + "\u2500" * 70)
     print(f"{'size':<12}{'naive':>10}{'compiled':>10}{'BLAS':>9}"
           f"{'GFLOPS':>18}{'BLAS is':>11}")
-    print(f"{'':<12}{'':>10}{'':>10}{'':>9}{'ours':>11}{'BLAS':>7}{'faster by':>11}")
+    print(f"{'':<12}{'':>10}{'':>10}{'':>9}{'mine':>11}{'BLAS':>7}{'faster by':>11}")
     print("  " + "\u2500" * 70)
 
     for size, slow, fast, blas in rows:
@@ -275,8 +275,6 @@ def print_numpy_table(rows):
     gains = [slow / fast for _, slow, fast, _ in rows]
     print("  " + "\u2500" * 70)
     print(f"The compiler closed the gap to BLAS by {sum(gains) / len(gains):.1f}x on average.")
-    print("BLAS uses every core and a register-blocked micro-kernel. This runs")
-    print("on one core, which is most of what is left.")
     print()
 
 def main():
