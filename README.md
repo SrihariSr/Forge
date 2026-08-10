@@ -166,19 +166,44 @@ Measured on an Apple M4 Max. Every optimised path is verified to produce output 
 
 | Optimisation | Workload | Before | After | Speedup |
 |---|---|---|---|---|
-| Operator fusion | 16M elements | 8.1ms | 3.4ms | 2.33x |
-| Cache-blocked matmul | 768 x 768 | 349.1ms | 32.1ms | 10.88x |
-| Both, 4-layer MLP | 256 x 256 | 43.1ms | 4.8ms | 8.94x |
+| Operator fusion | 16M elements | 8.0ms | 3.4ms | 2.34x |
+| Blocked, threaded matmul | 768 x 768 | 347.9ms | 3.9ms | 89.8x |
+| Both, 4-layer MLP | 256 x 256 | 43.0ms | 1.3ms | 33.6x |
 
-Against BLAS, called through NumPy, on the same machine:
+### How the matmul got fast
 
-| Size | Naive | Compiled | BLAS | Compiled, slower by |
+The same 2·n³ arithmetic operations throughout. Every gain came from moving memory differently, or from using more cores.
+
+| Stage | Time | GFLOPS | This step | Cumulative |
 |---|---|---|---|---|
-| 256 x 256 | 10.7ms | 1.2ms | 0.02ms | 49x |
-| 512 x 512 | 97.1ms | 11.6ms | 0.17ms | 69x |
-| 768 x 768 | 348.4ms | 32.1ms | 0.27ms | 117x |
+| Naive triple loop | 350.0ms | 3 | | 1.0x |
+| Loop reordering | 28.6ms | 32 | 12.2x | 12.2x |
+| Cache blocking | 33.2ms | 27 | 0.86x | 10.5x |
+| `restrict` | 32.4ms | 28 | 1.02x | 10.8x |
+| Threading and tuning | 4.0ms | 225 | 8.1x | 87.0x |
 
-The compiled matmul reaches about 28 GFLOPS against BLAS's 3.4 TFLOPS. The gap is SIMD and multithreading, neither of which is implemented yet.
+**Loop reordering** was the single largest win, and it changed no arithmetic at all. The naive version walks down a column of the right-hand matrix, jumping a full row stride on every step, so each 64-byte cache line fetched yields one useful float out of sixteen. Swapping the loop order so the innermost loop runs contiguously fixes that, and it is worth 12x on its own.
+
+**Cache blocking measured slightly slower** in isolation, which was not expected. At 768 x 768 a 64-row block of the right-hand matrix is around 192 KB, which already fits comfortably in this machine's L2, so tiling adds loop overhead without saving any traffic. It earns its place anyway, because the tiles are what give the threads independent slices of work.
+
+**`restrict` did nothing measurable.** It promises the compiler that the three arrays do not overlap, which sometimes unlocks reordering that aliasing would otherwise block. Here it did not, which tells us aliasing was never the constraint.
+
+**Threading gave the remaining 8x.** The choice of which loop to split follows from where threads would collide: splitting the shared-dimension loop is a data race, because different values of that index accumulate into the *same* output element, which is what the `+=` means. Splitting the output-row loop is safe, because each thread owns its rows outright. Tile size is then chosen from the matrix height, since a larger tile means better reuse but fewer tiles, and the thread count cannot exceed the number of tiles.
+
+One optimisation is missing from the table because it did not work. Hand-written NEON intrinsics for the inner loop measured **48ms against 32ms** for the plain scalar version. Clang was already auto-vectorising that loop at width 4 with an interleave of 4, and writing intrinsics constrained its scheduler more than it helped. Unrolling to four independent accumulator chains did not recover the difference either. The scalar loop is kept deliberately.
+
+### Against BLAS
+
+BLAS is called through NumPy. On this machine that is Apple's Accelerate, which uses hand-tuned assembly and the AMX matrix coprocessor.
+
+| Size | Naive | Forge | BLAS | Forge GFLOPS | BLAS GFLOPS | BLAS faster by |
+|---|---|---|---|---|---|---|
+| 256 x 256 | 11.8ms | 0.3ms | 0.13ms | 114 | 268 | 2.4x |
+| 512 x 512 | 97.0ms | 2.0ms | 0.67ms | 133 | 401 | 3.0x |
+| 768 x 768 | 348.0ms | 3.9ms | 2.27ms | 234 | 400 | 1.7x |
+
+Within 1.7x of hand-tuned assembly, in portable C with pthreads. What remains is a register-blocked micro-kernel, which computes a whole output tile in registers rather than accumulating through memory, and the AMX units, which are not reachable from portable C at all.
+
 
 ---
 
@@ -495,7 +520,7 @@ The core library is pure Python, so it is orders of magnitude slower than a prod
 
 The GPT processes one sequence at a time. Batching was implemented and verified but is not in this branch.
 
-The compiler handles the forward pass over five operations on one CPU core, with no autograd and no SIMD.
+The compiler handles the forward pass over six operations, with no autograd. Only matmul is threaded; the element-wise kernels are single-threaded, which is fine because they are memory-bound rather than compute-bound.
 
 Metal and Accelerate backends require macOS and PyObjC. Everything falls back to pure Python elsewhere.
 
@@ -547,6 +572,6 @@ sidequests/
 
 ---
 
-Built by **Srihari Srinivasan**, from an autograd engine to a compiler that writes its own kernels.
+Built by **Srihari Srinivasan**, with love :).
 
 [LinkedIn](https://linkedin.com/in/sriharisrini)
