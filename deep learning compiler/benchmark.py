@@ -31,6 +31,154 @@ void matmul_naive(const float* a, const float* b, float* out, int m, int n, int 
 }
 """
 
+# Each stage of the matmul as it was actually developed, so the report can show
+# where every factor of speedup came from. These are compiled at startup and
+# only ever used for measurement; the real kernel lives in kernels.c.
+STAGES_SRC = r"""
+#include <string.h>
+#include <pthread.h>
+
+/* 1. Naive. For each output element, walk a row of a and DOWN a column of b.
+ *    Going down a column jumps a whole row's width in memory every step, so
+ *    most of each cache line fetched is thrown away. */
+void mm_naive(const float* a, const float* b, float* out, int m, int n, int p){
+    for (int i = 0; i < m; i++)
+        for (int k = 0; k < p; k++){
+            float sum = 0.0f;
+            for (int j = 0; j < n; j++) sum += a[i*n + j] * b[j*p + k];
+            out[i*p + k] = sum;
+        }
+}
+
+/* 2. Loop order swapped so the innermost loop runs over k. Now b and out both
+ *    step forward one float at a time, which is what caches are built for.
+ *    Identical arithmetic, only the order of memory access changed. */
+void mm_reordered(const float* a, const float* b, float* out, int m, int n, int p){
+    memset(out, 0, (size_t)m*p*sizeof(float));
+    for (int i = 0; i < m; i++)
+        for (int j = 0; j < n; j++){
+            float a_ij = a[i*n + j];
+            for (int k = 0; k < p; k++) out[i*p + k] += a_ij * b[j*p + k];
+        }
+}
+
+/* 3. Cache blocking. A large matrix does not fit in cache, so data is evicted
+ *    before it can be reused. Working in tiles finishes everything that touches
+ *    a tile while it is still resident. */
+#define B3 64
+void mm_blocked(const float* a, const float* b, float* out, int m, int n, int p){
+    memset(out, 0, (size_t)m*p*sizeof(float));
+    for (int i0=0;i0<m;i0+=B3) for (int j0=0;j0<n;j0+=B3) for (int k0=0;k0<p;k0+=B3){
+        int ie=(i0+B3<m)?i0+B3:m, je=(j0+B3<n)?j0+B3:n, ke=(k0+B3<p)?k0+B3:p;
+        for (int i=i0;i<ie;i++) for (int j=j0;j<je;j++){
+            float a_ij=a[i*n+j];
+            for (int k=k0;k<ke;k++) out[i*p+k]+=a_ij*b[j*p+k];
+        }
+    }
+}
+
+/* 4. restrict, promising the compiler the three arrays do not overlap, so it
+ *    is free to reorder loads and stores. */
+void mm_restrict(const float* restrict a, const float* restrict b,
+                 float* restrict out, int m, int n, int p){
+    memset(out, 0, (size_t)m*p*sizeof(float));
+    for (int i0=0;i0<m;i0+=B3) for (int j0=0;j0<n;j0+=B3) for (int k0=0;k0<p;k0+=B3){
+        int ie=(i0+B3<m)?i0+B3:m, je=(j0+B3<n)?j0+B3:n, ke=(k0+B3<p)?k0+B3:p;
+        for (int i=i0;i<ie;i++) for (int j=j0;j<je;j++){
+            float a_ij=a[i*n+j];
+            for (int k=k0;k<ke;k++) out[i*p+k]+=a_ij*b[j*p+k];
+        }
+    }
+}
+"""
+
+
+def load_stages() -> ctypes.CDLL:
+    """
+    Compile every intermediate version of the matmul, so the report can show
+    what each optimisation actually contributed rather than only the total.
+    """
+    folder = tempfile.mkdtemp(prefix = "stages_")
+    source = os.path.join(folder, "stages.c")
+    library = os.path.join(folder, "stages.so")
+    with open(source, "w") as f:
+        f.write(STAGES_SRC)
+    subprocess.run(["gcc", "-O2", "-shared", "-fPIC", source, "-o", library,
+                    "-lpthread"], check = True, capture_output = True)
+
+    lib = ctypes.CDLL(library)
+    FP = ctypes.POINTER(ctypes.c_float)
+    for name in ("mm_naive", "mm_reordered", "mm_blocked", "mm_restrict"):
+        fn = getattr(lib, name)
+        fn.argtypes = [FP, FP, FP, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+        fn.restype = None
+    return lib
+
+
+def measure_journey(stages) -> list:
+    """
+    Time every version of the matmul on the same problem, in the order they
+    were built, and check each against the naive one before timing it.
+    Returns rows of (label, milliseconds).
+    """
+    random.seed(9)
+    size = 768
+    a = rand_tensor((size, size))
+    b = rand_tensor((size, size))
+    ref = _empty((size, size))
+    out = _empty((size, size))
+
+    stages.mm_naive(_addr(a.data), _addr(b.data), _addr(ref.data),
+                    size, size, size)
+
+    rows = []
+    for label, fn in (("naive",                    stages.mm_naive),
+                      ("+ loop reordering",        stages.mm_reordered),
+                      ("+ cache blocking",         stages.mm_blocked),
+                      ("+ restrict",               stages.mm_restrict)):
+        fn(_addr(a.data), _addr(b.data), _addr(out.data), size, size, size)
+        assert max_diff(ref, out) < 1e-1, f"{label} changed the answer"
+        rows.append((label, bench(lambda f = fn: f(_addr(a.data), _addr(b.data),
+                                                   _addr(out.data),
+                                                   size, size, size), 7)))
+
+    # the kernel actually shipped in kernels.c: adaptive block size, 8 threads
+    _lib.matmul(_addr(a.data), _addr(b.data), _addr(out.data), size, size, size)
+    assert max_diff(ref, out) < 1e-1, "the shipped kernel changed the answer"
+    rows.append(("+ threading and tuning",
+                 bench(lambda: _lib.matmul(_addr(a.data), _addr(b.data),
+                                           _addr(out.data), size, size, size), 15)))
+    return rows
+
+
+def print_journey(rows):
+    """
+    Show what each optimisation contributed, in the order they were applied.
+    """
+    size = 768
+    flops = 2.0 * size ** 3
+    first = rows[0][1]
+
+    print()
+    print("HOW THE MATMUL GOT FAST, 768 x 768")
+    print("  " + "\u2500" * 70)
+    print(f"{'stage':<26}{'time':>10}{'GFLOPS':>10}{'step':>10}{'total':>10}")
+    print("  " + "\u2500" * 70)
+
+    previous = first
+    for label, ms in rows:
+        gflops = flops / (ms / 1000.0) / 1e9
+        step = previous / ms
+        total = first / ms
+        step_text = "" if ms == first else f"{step:.2f}x"
+        print(f"{label:<26}{ms:>8.1f}ms{gflops:>10.0f}{step_text:>10}{total:>9.1f}x")
+        previous = ms
+    print("  " + "\u2500" * 70)
+    print("Same arithmetic throughout. Every gain came from moving memory")
+    print("differently or from using more cores.")
+    print()
+
+
 def bench(fn, reps = 15, warmups = 3) -> float:
     """
     Median milliseconds per call.
@@ -279,7 +427,9 @@ def print_numpy_table(rows):
 
 def main():
     naive = load_naive()
+    stages = load_stages()
 
+    journey = measure_journey(stages)
     breakdown = measure_fusion() + measure_matmul(naive)
     pipeline = measure_pipeline(naive)
     numpy_rows = measure_against_numpy(naive) if HAVE_NUMPY else None
@@ -293,6 +443,8 @@ def main():
     for label, workload, before, after in breakdown:
         print(f"{label:<16}{workload:>20}{before:>10.1f}ms{after:>10.1f}ms"
               f"{before / after:>9.2f}x")
+
+    print_journey(journey)
 
     if numpy_rows is not None:
         print_numpy_table(numpy_rows)

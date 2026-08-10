@@ -128,7 +128,6 @@ void matmul(const float* restrict a, const float* restrict b,
 
     // Zero once, here, before any thread starts.
     memset(out, 0, (size_t)m * p * sizeof(float));
-
     int block = block_for(m);
 
     // Rows are handed out in whole blocks, so the split stays aligned with the
