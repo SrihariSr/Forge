@@ -58,10 +58,15 @@ do. more contigious work is better.
 Numbers are based on measurements on Apple M4 Max.
 */
 
-static int block_for(int m){
-    if (m >= 512) return 96;
-    if (m >= 384) return 64;
-    return 32;
+static int block_for(int m, int nthreads){
+    int b = m / nthreads;
+
+    // Below 32 the per-tile overhead starts to dominate the work
+    if (b < 32) b = 32;
+    // Above 128 the tile stops fitting comfortably in the cache
+    if (b > 128) b = 128;
+
+    return b;
 }
 
 #define MAX_THREADS 32
@@ -128,13 +133,15 @@ void matmul(const float* restrict a, const float* restrict b,
 
     // Zero once, here, before any thread starts.
     memset(out, 0, (size_t)m * p * sizeof(float));
-    int block = block_for(m);
+    
+    int nthreads = cores();
+
+    int block = block_for(m, nthreads);
 
     // Rows are handed out in whole blocks, so the split stays aligned with the
     // blocking and each thread's cache behaviour is unchanged.
     int total_blocks = (m + block - 1) / block;
 
-    int nthreads = cores();
     // Never more threads than there are blocks to give them.
     if (nthreads > total_blocks) nthreads = total_blocks;
     if (nthreads < 1) nthreads = 1;
