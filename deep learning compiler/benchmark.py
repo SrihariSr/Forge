@@ -174,8 +174,6 @@ def print_journey(rows):
         print(f"{label:<26}{ms:>8.1f}ms{gflops:>10.0f}{step_text:>10}{total:>9.1f}x")
         previous = ms
     print("  " + "\u2500" * 70)
-    print("Same arithmetic throughout. Every gain came from moving memory")
-    print("differently or from using more cores.")
     print()
 
 
@@ -460,6 +458,8 @@ def main():
         blocks = "\u2588" * max(1, round(taken / slowest * 26))
         speedup = "" if taken == baseline else f"{baseline / taken:.2f}x"
         print(f"{label:<26}{taken:>8.1f}ms  {blocks:<28}{speedup}")
+    
+    print()
 
 if __name__ == "__main__":
     main()

@@ -5,7 +5,6 @@
 #include <pthread.h>
 #include <unistd.h>
 
-/* ELEMENT-WISE OPERATIONS */
 void add(const float* a, const float* b, float* out, int n){
     int i = 0;
 
@@ -40,6 +39,9 @@ void relu(const float* x, float* out, int n){
         float32x4_t v = vld1q_f32(x + i);
         vst1q_f32(out + i, vmaxq_f32(v, zero));
     }
+
+    // How many ever elements the vector loop left behind,
+    // this loop comes back for (Katara would approve).
     for (; i < n; i++){
         out[i] = x[i] > 0.0f ? x[i] : 0.0f;
     }
@@ -143,6 +145,7 @@ void matmul(const float* restrict a, const float* restrict b,
     int total_blocks = (m + block - 1) / block;
 
     // Never more threads than there are blocks to give them.
+    // (an idle thread is like Sokka on a fishing trip)
     if (nthreads > total_blocks) nthreads = total_blocks;
     if (nthreads < 1) nthreads = 1;
 
