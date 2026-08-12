@@ -1,3 +1,9 @@
+"""
+It is important to draw wisdom from many different places.
+If you take it from only one place, it becomes rigid and stale.
+    - Uncle Iroh
+"""
+
 def grad_check(func, inputs, eps=1e-3, tol=1e-2):
     """
     Using first principles for differentiation: df/dx = lim(h->0) [f(x + h) - f(x - h)] / 2h

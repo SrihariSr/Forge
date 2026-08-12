@@ -166,9 +166,9 @@ Measured on an Apple M4 Max. Every optimised path is verified to produce output 
 
 | Optimisation | Workload | Before | After | Speedup |
 |---|---|---|---|---|
-| Operator fusion | 16M elements | 8.0ms | 3.4ms | 2.34x |
-| Blocked, threaded matmul | 768 x 768 | 347.9ms | 3.9ms | 89.8x |
-| Both, 4-layer MLP | 256 x 256 | 43.0ms | 1.3ms | 33.6x |
+| Operator fusion | 16M elements | 8.1ms | 3.4ms | 2.36x |
+| Blocked, threaded matmul | 768 x 768 | 348.0ms | 3.8ms | 91.2x |
+| Both, 4-layer MLP | 256 x 256 | 43.0ms | 1.3ms | 33.5x |
 
 ### How the matmul got fast
 
@@ -176,19 +176,21 @@ The same 2·n³ arithmetic operations throughout. Every gain came from moving me
 
 | Stage | Time | GFLOPS | This step | Cumulative |
 |---|---|---|---|---|
-| Naive triple loop | 350.0ms | 3 | | 1.0x |
+| Naive triple loop | 349.3ms | 3 | | 1.0x |
 | Loop reordering | 28.6ms | 32 | 12.2x | 12.2x |
-| Cache blocking | 33.2ms | 27 | 0.86x | 10.5x |
-| `restrict` | 32.4ms | 28 | 1.02x | 10.8x |
-| Threading and tuning | 4.0ms | 225 | 8.1x | 87.0x |
+| Cache blocking | 32.2ms | 28 | 0.89x | 10.8x |
+| `restrict` | 32.2ms | 28 | 1.00x | 10.8x |
+| Threading and tuning | 3.8ms | 237 | 8.4x | 91.3x |
 
 **Loop reordering** was the single largest win, and it changed no arithmetic at all. The naive version walks down a column of the right-hand matrix, jumping a full row stride on every step, so each 64-byte cache line fetched yields one useful float out of sixteen. Swapping the loop order so the innermost loop runs contiguously fixes that, and it is worth 12x on its own.
 
-**Cache blocking measured slightly slower** in isolation, which was not expected. At 768 x 768 a 64-row block of the right-hand matrix is around 192 KB, which already fits comfortably in this machine's L2, so tiling adds loop overhead without saving any traffic. It earns its place anyway, because the tiles are what give the threads independent slices of work.
+**Cache blocking measured slightly slower** in isolation, which was not expected. At 768 x 768 a block of the right-hand matrix already fits comfortably in this machine's L2, so tiling adds loop overhead without saving any traffic. It earns its place anyway, because the tiles are what give the threads independent slices of work.
 
 **`restrict` did nothing measurable.** It promises the compiler that the three arrays do not overlap, which sometimes unlocks reordering that aliasing would otherwise block. Here it did not, which tells us aliasing was never the constraint.
 
-**Threading gave the remaining 8x.** The choice of which loop to split follows from where threads would collide: splitting the shared-dimension loop is a data race, because different values of that index accumulate into the *same* output element, which is what the `+=` means. Splitting the output-row loop is safe, because each thread owns its rows outright. Tile size is then chosen from the matrix height, since a larger tile means better reuse but fewer tiles, and the thread count cannot exceed the number of tiles.
+**Threading gave the remaining 8.4x.** The choice of which loop to split follows from where threads would collide: splitting the shared-dimension loop is a data race, because different values of that index accumulate into the *same* output element, which is what the `+=` means. Splitting the output-row loop is safe, because each thread owns its rows outright.
+
+Tile size then falls out of the thread count. A larger tile means better reuse but fewer tiles, and the thread count cannot exceed the number of tiles, so dividing the matrix height by the number of threads balances the two: every thread gets one equal, contiguous slice and none sits idle. That rule reproduces both sizes found by brute-force tuning without being told them, giving 96 at m=768 and 32 at m=256.
 
 One optimisation is missing from the table because it did not work. Hand-written NEON intrinsics for the inner loop measured **48ms against 32ms** for the plain scalar version. Clang was already auto-vectorising that loop at width 4 with an interleave of 4, and writing intrinsics constrained its scheduler more than it helped. Unrolling to four independent accumulator chains did not recover the difference either. The scalar loop is kept deliberately.
 
@@ -198,12 +200,13 @@ BLAS is called through NumPy. On this machine that is Apple's Accelerate, which 
 
 | Size | Naive | Forge | BLAS | Forge GFLOPS | BLAS GFLOPS | BLAS faster by |
 |---|---|---|---|---|---|---|
-| 256 x 256 | 11.8ms | 0.3ms | 0.13ms | 114 | 268 | 2.4x |
-| 512 x 512 | 97.0ms | 2.0ms | 0.67ms | 133 | 401 | 3.0x |
-| 768 x 768 | 348.0ms | 3.9ms | 2.27ms | 234 | 400 | 1.7x |
+| 256 x 256 | 11.0ms | 0.3ms | 0.12ms | 109 | 270 | 2.5x |
+| 512 x 512 | 97.1ms | 1.6ms | 0.67ms | 172 | 401 | 2.3x |
+| 768 x 768 | 348.0ms | 3.9ms | 2.58ms | 234 | 351 | **1.5x** |
 
-Within 1.7x of hand-tuned assembly, in portable C with pthreads. What remains is a register-blocked micro-kernel, which computes a whole output tile in registers rather than accumulating through memory, and the AMX units, which are not reachable from portable C at all.
+**234 GFLOPS against 351**, in portable C with pthreads, against hand-tuned assembly with dedicated matrix silicon behind it.
 
+Two things stand between the two numbers. A register-blocked micro-kernel, which computes a whole output tile in registers rather than accumulating through memory, is worth perhaps 1.3x and is genuinely available. The AMX matrix units are not: Apple never published how to address them, so no portable C can reach them at all. Part of that 1.5x is not closable from here.
 
 ---
 
