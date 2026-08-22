@@ -283,9 +283,8 @@ Prints the convergence table and writes `prices.png`.
 ### The compiler
 
 ```bash
-cd "deep learning compiler"
-gcc -O2 -shared -fPIC kernels.c -o kernels.so
-python3 benchmark.py
+python -m forge.compiler.build
+python forge/compiler/benchmark.py
 ```
 
 ---
@@ -411,7 +410,7 @@ flowchart LR
     E --> F["Execute<br/>one call per group"]
 ```
 
-Five stages, each in its own file under `deep learning compiler/`:
+Five stages, each in its own file under `forge/compiler/`:
 
 | Stage | File | What it does |
 |---|---|---|
@@ -539,10 +538,11 @@ Metal and Accelerate backends require macOS and PyObjC. Everything falls back to
 ## Repository layout
 
 ```
-Forge/
+forge/
   tensor.py               Tensor class, broadcasting, operator overloading
   dtype.py                float32 and float64 definitions
   serialization.py        save and load weights
+
   autograd/
     engine.py             Function base class, the autograd core
     operations.py         differentiable operations and their gradients
@@ -551,23 +551,24 @@ Forge/
     mps_backend.py        Apple Metal GPU matmul
     accelerate_backend.py Apple Accelerate BLAS matmul
 
-NeuralNetwork/
-  module.py               Module base class, parameter registration
-  layers.py               Linear, Embedding, LayerNorm, MultiHeadAttention, GPT
-  losses.py               MSE, BCE, CrossEntropy
-  parameter.py            trainable tensor wrapper
+  nn/
+    module.py             Module base class, parameter registration
+    layers.py             Linear, Embedding, LayerNorm, MultiHeadAttention, GPT
+    losses.py             MSE, BCE, CrossEntropy
+    parameter.py          trainable tensor wrapper
 
-Optim/
-  optimizer.py            SGD with momentum, Adam
+  optim/
+    optimizer.py          SGD with momentum, Adam
 
-deep learning compiler/
-  graph.py                computation graph representation
-  fusion.py               fusion planning pass
-  codegen.py              C source generation and run-time compilation
-  interpreter.py          baseline node-by-node execution
-  compiled_run.py         compiled plan execution
-  kernels.c               hand-written C kernels, including blocked matmul
-  benchmark.py            performance measurement
+  compiler/
+    graph.py              computation graph representation
+    fusion.py             fusion planning pass
+    codegen.py            C source generation and run-time compilation
+    interpreter.py        baseline node-by-node execution
+    compiled_run.py       compiled plan execution
+    kernels.c             hand-written C kernels, including blocked matmul
+    build.py              builds kernels.so
+    benchmark.py          performance measurement
 
 sidequests/
   shakespeare/
