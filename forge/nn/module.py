@@ -1,4 +1,4 @@
-from NeuralNetwork.parameter import Parameter
+from forge.nn.parameter import Parameter
 
 
 class Module:

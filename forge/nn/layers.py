@@ -1,9 +1,9 @@
 import math
-from Forge.tensor import Tensor
-from NeuralNetwork.module import Module
-from NeuralNetwork.parameter import Parameter
-from NeuralNetwork.module import Module
-from Forge.CalcLlama.fused_operations import FusedLinearReLU
+from forge.tensor import Tensor
+from forge.nn.module import Module
+from forge.nn.parameter import Parameter
+from forge.nn.module import Module
+from forge.autograd.fused_operations import FusedLinearReLU
 import random
 import array as _array
 
@@ -104,7 +104,7 @@ class Sequential(Module):
 
     def optimize(self):
         # Apply fusion optimizations to this model
-        from Forge.CalcLlama.fusion import optimize_model
+        from forge.autograd.fusion import optimize_model
         self._layer_list = optimize_model(self._layer_list)
 
         # Re-register modules
@@ -135,7 +135,7 @@ class Embedding(Module):
         self.weight = Parameter(Tensor(weight_data))
 
     def forward(self, indices):
-        from Forge.tensor import Tensor
+        from forge.tensor import Tensor
         import array as _array
 
         batch_size = len(indices)

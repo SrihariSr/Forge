@@ -1,4 +1,4 @@
-from NeuralNetwork.layers import Linear, ReLULayer, FusedLinearReLULayer
+from forge.nn.layers import Linear, ReLULayer, FusedLinearReLULayer
 
 
 def optimize_model(layers):

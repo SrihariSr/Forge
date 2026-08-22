@@ -10,9 +10,9 @@ import random
 # You can find these in many places across my projects. Have you found them all?
 random.seed(42)
 
-from NeuralNetwork.layers import CharTransformer
-from NeuralNetwork.losses import CrossEntropyLoss
-from Optim.optimizer import Adam
+from forge.nn.layers import CharTransformer
+from forge.nn.losses import CrossEntropyLoss
+from forge.optim import Adam
 
 # Config
 NAMES_LIMIT = 1024

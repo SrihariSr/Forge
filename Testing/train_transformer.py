@@ -2,10 +2,10 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import random
-from Forge import Tensor
-from NeuralNetwork.layers import CharTransformer
-from NeuralNetwork.losses import CrossEntropyLoss
-from Optim.optimizer import Adam
+from forge import Tensor
+from forge.nn.layers import CharTransformer
+from forge.nn.losses import CrossEntropyLoss
+from forge.optim import Adam
 
 random.seed(4)
 
@@ -108,8 +108,8 @@ for _ in range(20):
 
 print("Generated: " + "".join(generated))
 
-from Forge.serialization import save_model, load_model
-from NeuralNetwork.layers import CharTransformer
+from forge.serialization import save_model, load_model
+from forge.nn.layers import CharTransformer
 
 # Save the trained model
 save_model(model, "transformer_weights.json")

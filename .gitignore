@@ -18,3 +18,5 @@ training_log.txt
 resume_log.txt
 transformer_weights.json
 watch_*
+.venv/
+*.egg-info/

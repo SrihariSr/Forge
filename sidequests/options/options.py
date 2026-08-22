@@ -3,8 +3,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__)))))
 import math
 import random
-from Forge import Tensor
-from Forge.dtype import float64
+from forge import Tensor
+from forge.dtype import float64
 
 def standard_normals(count, seed=42) -> Tensor:
     """

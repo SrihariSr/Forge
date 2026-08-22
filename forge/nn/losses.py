@@ -1,4 +1,4 @@
-from NeuralNetwork.module import Module
+from forge.nn.module import Module
 import math
 
 class MSELoss(Module):
@@ -21,7 +21,7 @@ class BCELoss(Module):
         super().__init__()
 
     def forward(self, pred, target):
-        from Forge.tensor import Tensor
+        from forge.tensor import Tensor
         eps = 1e-7
         pred_clamped = pred.clamp(eps, 1 - eps)
 
@@ -38,8 +38,8 @@ class CrossEntropyLoss(Module):
         super().__init__()
 
     def forward(self, pred, target):
-        from Forge.tensor import Tensor
-        from Forge.CalcLlama.engine import Function
+        from forge.tensor import Tensor
+        from forge.autograd.engine import Function
         import math
         import array as _array
 

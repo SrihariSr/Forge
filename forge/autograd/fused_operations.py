@@ -1,6 +1,6 @@
 import array as _array
 import math
-from Forge.CalcLlama.engine import Function
+from forge.autograd.engine import Function
 
 
 class FusedLinearReLU(Function):
@@ -9,7 +9,7 @@ class FusedLinearReLU(Function):
     def forward(self, x, weight_t, bias):
         self.inputs = [x, weight_t, bias]
         self.save_for_backward(x, weight_t, bias)
-        from Forge.tensor import Tensor
+        from forge.tensor import Tensor
 
         m = x.shape[0]
         n = x.shape[1]
@@ -48,8 +48,8 @@ class FusedLinearReLU(Function):
     def backward(self, grad_output):
         x, weight_t, bias = self.saved_tensors
         output = self._output
-        from Forge.tensor import Tensor, _broadcast_shape, _broadcast_data
-        from Forge.CalcLlama.operations import _unbroadcast
+        from forge.tensor import Tensor, _broadcast_shape, _broadcast_data
+        from forge.autograd.operations import _unbroadcast
 
         m = x.shape[0]
         n = x.shape[1]

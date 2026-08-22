@@ -1,4 +1,4 @@
-from Forge.tensor import Tensor
+from forge.tensor import Tensor
 
 class Parameter(Tensor):
     """A tensor that is automatically marked as requiring gradients"""

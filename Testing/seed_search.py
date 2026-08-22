@@ -3,10 +3,10 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import random
-from Forge import Tensor
-from NeuralNetwork.layers import CharTransformer
-from NeuralNetwork.losses import CrossEntropyLoss
-from Optim.optimizer import Adam
+from forge import Tensor
+from forge.nn.layers import CharTransformer
+from forge.nn.losses import CrossEntropyLoss
+from forge.optim import Adam
 
 # Dataset setup
 text = "hello world hello world hello world "

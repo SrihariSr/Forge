@@ -15,10 +15,10 @@ import time
 import pickle
 from multiprocessing import Pool
 
-from Forge import Tensor
-from NeuralNetwork.layers import GPT
-from NeuralNetwork.losses import CrossEntropyLoss
-from Optim.optimizer import Adam
+from forge import Tensor
+from forge.nn.layers import GPT
+from forge.nn.losses import CrossEntropyLoss
+from forge.optim import Adam
 
 # Config
 DATA_FILE = os.path.join(HERE, "shakespeare.txt")
