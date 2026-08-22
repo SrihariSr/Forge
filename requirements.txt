@@ -1,4 +1,0 @@
-# The core library has no dependencies. These are for optional extras.
-matplotlib   # charts in examples/options/price_report.py
-numpy        # BLAS comparison in deep learning compiler/benchmark.py
-pyobjc       # Apple Metal GPU backend, macOS only
