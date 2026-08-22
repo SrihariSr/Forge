@@ -62,11 +62,11 @@ def constant(value) -> Node:
     """
     return Node("constant", [], name=f"constant({value})", value=value)
 
-    def relu(self) -> Node:
-        """
-        Element-wise max(0, x), as a method so expressions chain readably.
-        """
-        return Node("relu", [self])
+def relu(self) -> Node:
+    """
+    Element-wise max(0, x), as a method so expressions chain readably.
+    """
+    return Node("relu", [self])
 
 def matmul(a, b) -> Node:
     """
