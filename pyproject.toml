@@ -13,5 +13,8 @@ plots = ["matplotlib"]
 bench = ["numpy"]
 metal = ["pyobjc"]
 
+[tool.setuptools.package-data]
+"forge.compiler" = ["*.c"]
+
 [tool.setuptools]
-packages = ["forge", "forge.autograd", "forge.nn", "forge.optim"]
+packages = ["forge", "forge.autograd", "forge.compiler", "forge.nn", "forge.optim"]

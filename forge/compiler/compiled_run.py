@@ -1,8 +1,8 @@
 import ctypes
-from graph import topological_order
-from fusion import fuse
-from codegen import generate_c, compile_and_load, group_external_inputs
-from interpreter import Tensor, _empty, _addr, _lib
+from forge.compiler.graph import topological_order
+from forge.compiler.fusion import fuse
+from forge.compiler.codegen import generate_c, compile_and_load, group_external_inputs
+from forge.compiler.interpreter import Tensor, _empty, _addr, _lib
 
 def compile_graph(root):
     """

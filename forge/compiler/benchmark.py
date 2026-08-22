@@ -12,9 +12,9 @@ try:
 except ImportError:
     HAVE_NUMPY = False
 
-from graph import placeholder, relu, matmul, topological_order
-from interpreter import run, Tensor, _lib, _addr, _empty
-from compiled_run import compile_graph, run_compiled
+from forge.compiler.graph import placeholder, relu, matmul, topological_order
+from forge.compiler.interpreter import run, Tensor, _lib, _addr, _empty
+from forge.compiler.compiled_run import compile_graph, run_compiled
 
 # Unoptimised matmul, compiled at startup so the report has a real "before".
 NAIVE_SRC = r"""

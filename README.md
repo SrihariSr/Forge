@@ -215,14 +215,21 @@ Two things stand between the two numbers. A register-blocked micro-kernel, which
 ```bash
 git clone https://github.com/SrihariSr/Forge.git
 cd Forge
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
 ```
 
-Nothing to install for the core library. Python 3.10 or later.
+Python 3.10 or later. The core library has no dependencies. 
+
+Optional extras:
+`pip install -e ".[plots]"` for the option pricing charts, `".[bench]"` for the
+compiler's BLAS comparison, `".[metal]"` for the Apple GPU backend.
 
 ### Tensors and gradients
 
 ```python
-from Forge import Tensor
+from forge import Tensor
 
 a = Tensor([[1.0, 2.0], [3.0, 4.0]])
 b = Tensor([[5.0, 6.0], [7.0, 8.0]])
@@ -240,9 +247,9 @@ print(x.grad)     # dy/dx = 2x + 1
 ### A GPT
 
 ```python
-from NeuralNetwork.layers import GPT
-from NeuralNetwork.losses import CrossEntropyLoss
-from Optim.optimizer import Adam
+from forge.nn import GPT
+from forge.nn import CrossEntropyLoss
+from forge.optim import Adam
 
 model = GPT(vocab_size=65, embed_dim=128, num_heads=4,
             ff_dim=256, num_layers=4, seq_len=32)
@@ -302,8 +309,8 @@ Adding a new differentiable operation means subclassing `Function` and writing `
 Every operation is checked against a numerical gradient computed by central finite differences:
 
 ```python
-from Forge.CalcLlama import grad_check
-from Forge.dtype import float64
+from forge.autograd import grad_check
+from forge.dtype import float64
 
 def mse(pred):
     target = Tensor([1.0, 2.0, 3.0], dtype=float64)
@@ -536,7 +543,7 @@ Forge/
   tensor.py               Tensor class, broadcasting, operator overloading
   dtype.py                float32 and float64 definitions
   serialization.py        save and load weights
-  CalcLlama/
+  autograd/
     engine.py             Function base class, the autograd core
     operations.py         differentiable operations and their gradients
     grad_check.py         numerical gradient verification

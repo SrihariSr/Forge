@@ -1,4 +1,4 @@
-from graph import topological_order
+from forge.compiler.graph import topological_order
 
 ELEMENTWISE_OPS = {"add", "sub", "mul", "relu", "exp"}
 

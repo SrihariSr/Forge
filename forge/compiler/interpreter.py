@@ -1,9 +1,22 @@
 import ctypes
 import array
-from graph import topological_order
+from forge.compiler.graph import topological_order
+import os
 
-# Loading compiled kernels and declaring their signatures
-_lib = ctypes.CDLL("./kernels.so")
+# The library sits beside this file, so locate it relative to __file__ rather
+# than the working directory. "./kernels.so" only worked when the compiler was
+# run from inside its own folder.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_SO = os.path.join(_HERE, "kernels.so")
+
+if not os.path.exists(_SO):
+    raise ImportError(
+        "forge.compiler needs its C kernels built first. Run:\n\n"
+        "   python -m forge.compiler.build\n"
+    )
+
+_lib = ctypes.CDLL(_SO)
+
 _FP = ctypes.POINTER(ctypes.c_float)
 
 for _name in ("add", "sub", "mul"):
