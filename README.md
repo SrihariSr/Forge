@@ -1,5 +1,10 @@
 # Forge
 
+![PyPI](https://img.shields.io/pypi/v/forge-dl?style=flat-square&color=1f6feb)
+![Python](https://img.shields.io/badge/Python-3.10%2B-1f6feb?style=flat-square)
+![Core dependencies](https://img.shields.io/badge/core_dependencies-none-2ea043?style=flat-square)
+![License](https://img.shields.io/badge/license-MIT-2ea043?style=flat-square)
+
 A machine learning library written from scratch in Python, with a deep learning compiler that generates C.
 
 No PyTorch, no TensorFlow, no NumPy in the core. Every operation, from the autograd engine to the attention mechanism, is implemented from first principles. The compiler on top of it analyses computation graphs, fuses operations, and emits optimised C at run time.
