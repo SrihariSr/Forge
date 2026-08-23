@@ -213,11 +213,7 @@ Two things stand between the two numbers. A register-blocked micro-kernel, which
 ## Quick start
 
 ```bash
-git clone https://github.com/SrihariSr/Forge.git
-cd Forge
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
+pip install forge-dl
 ```
 
 Python 3.10 or later. The core library has no dependencies. 

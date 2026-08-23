@@ -5,12 +5,16 @@ __pycache__/
 *.pyc
 *.pyo
 .DS_Store
+.pypirc
+
 
 # build artifacts
 *.so
 *.o
 *.dylib
 a.out
+dist/
+build/
 
 # generated output
 *.png
