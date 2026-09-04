@@ -1,10 +1,16 @@
+from __future__ import annotations
+
 import ctypes
+from typing import TYPE_CHECKING
 from forge.compiler.graph import topological_order
 from forge.compiler.fusion import fuse
 from forge.compiler.codegen import generate_c, compile_and_load, group_external_inputs
 from forge.compiler.interpreter import Tensor, _empty, _addr, _lib
 
-def compile_graph(root):
+if TYPE_CHECKING:
+    from forge.compiler.graph import Node
+
+def compile_graph(root: "Node") -> list[tuple]:
     """
     Turns a graph into an executable plan by:
      - Group the nodes.
@@ -22,7 +28,7 @@ def compile_graph(root):
         for n in g:
             node_to_group[n] = g
     
-    steps = []
+    steps: list[tuple] = []
     # Which groups already have a step, so that the same group isn't compiled more than once
     emitted = set()
 
@@ -55,7 +61,7 @@ def compile_graph(root):
 
     return steps
 
-def run_compiled(root, steps, feeds):
+def run_compiled(root: "Node", steps: list[tuple], feeds: dict[str, Tensor]) -> Tensor:
     """
     Execute a compiled plan on real data.
 

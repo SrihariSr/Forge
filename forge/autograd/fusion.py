@@ -1,12 +1,19 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from forge.nn.layers import Linear, ReLULayer, FusedLinearReLULayer
 
+if TYPE_CHECKING:
+    from forge.nn.module import Module
 
-def optimize_model(layers):
+
+def optimize_model(layers: list) -> list["Module"]:
     """
     Takes a list of layers and returns an optimized list
     with fused operations where possible.
     """
-    optimized = []
+    optimized: list["Module"] = []
     i = 0
 
     while i < len(layers):

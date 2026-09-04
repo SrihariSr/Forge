@@ -1,20 +1,20 @@
 import array
 
 class Dtype:
-    def __init__(self, name, typecode, size):
+    def __init__(self, name: str, typecode: str, size: int) -> None:
         self.name = name
         self.typecode = typecode
         self.size = size
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.name
     
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, Dtype):
             return self.typecode == other.typecode
         return False
     
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.typecode)
 
     

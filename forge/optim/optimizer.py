@@ -1,25 +1,31 @@
+from __future__ import annotations
+
 import array as _array
 import math
+from typing import TYPE_CHECKING, Iterable
+
+if TYPE_CHECKING:
+    from forge.tensor import Tensor
 
 class Optimizer:
     """Base class for all optimizers."""
 
     # lr = learning rate
-    def __init__(self, parameters, lr=0.01):
+    def __init__(self, parameters: Iterable["Tensor"], lr: float = 0.01) -> None:
         self.parameters = list(parameters)
         self.lr = lr
 
-    def step(self):
+    def step(self) -> None:
         raise NotImplementedError
 
-    def zero_grad(self):
+    def zero_grad(self) -> None:
         for param in self.parameters:
             param.grad = None
 
 class SGD(Optimizer):
     # Stochastic Gradient Descent
 
-    def __init__(self, parameters, lr=0.01, momentum=0.0):
+    def __init__(self, parameters: Iterable["Tensor"], lr: float = 0.01, momentum: float = 0.0) -> None:
         super().__init__(parameters, lr)
         self.momentum = momentum
         self.velocities = []
@@ -27,7 +33,7 @@ class SGD(Optimizer):
         for param in self.parameters:
             self.velocities.append(_array.array(param.dtype.typecode, [0.0] * len(param._data)))
 
-    def step(self):
+    def step(self) -> None:
         for i, param in enumerate(self.parameters):
             if param.grad is None:
                 continue
@@ -42,7 +48,7 @@ class SGD(Optimizer):
 class Adam(Optimizer):
     # Adam optimizer
 
-    def __init__(self, parameters, lr=0.001, beta1=0.9, beta2=0.999, eps=1e-8):
+    def __init__(self, parameters: Iterable["Tensor"], lr: float = 0.001, beta1: float = 0.9, beta2: float = 0.999, eps: float = 1e-8) -> None:
         super().__init__(parameters, lr)
         self.beta1 = beta1
         self.beta2 = beta2
@@ -60,7 +66,7 @@ class Adam(Optimizer):
                 _array.array(param.dtype.typecode, [0.0] * len(param._data))
             )
 
-    def step(self):
+    def step(self) -> None:
         self.t += 1
 
         for i, param in enumerate(self.parameters):

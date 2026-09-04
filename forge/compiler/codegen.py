@@ -1,7 +1,13 @@
+from __future__ import annotations
+
 import ctypes
 import os
 import subprocess
 import tempfile
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from forge.compiler.graph import Node
 
 C_EXP = {
     "add": "({} + {})",
@@ -11,7 +17,7 @@ C_EXP = {
     "exp": "expf({})" # expf is the float version of e^x in C's standard library
 }
 
-def generate_c(group, group_inputs, func_name="fused_kernel") -> list:
+def generate_c(group: list["Node"], group_inputs: list["Node"], func_name: str = "fused_kernel") -> str:
     """
     Build the C source for one fused group.
       `group`        : nodes in the group, in execution order.
@@ -53,7 +59,7 @@ def generate_c(group, group_inputs, func_name="fused_kernel") -> list:
 
     return "\n".join(lines)
 
-def compile_and_load(c_source, func_name, num_inputs):
+def compile_and_load(c_source: str, func_name: str, num_inputs: int):
     """
     Takes a generated C source code, compiles it into a shared library,
     load that library, and return a Python-callable handle to the function inside it. 
@@ -79,7 +85,7 @@ def compile_and_load(c_source, func_name, num_inputs):
 
     return fn
 
-def group_external_inputs(group):
+def group_external_inputs(group: list["Node"]) -> list["Node"]:
     """
     Works out which values a fused group needs to read from memory.
     """

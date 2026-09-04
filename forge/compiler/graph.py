@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 _counter = 0 # global ID counter for readable names
 
 def _next_id() -> int:
@@ -6,7 +8,7 @@ def _next_id() -> int:
     _counter += 1
     return i
 
-def _wrap(x):
+def _wrap(x) -> "Node":
     if isinstance(x, Node):
         return x
     return Node("constant", [], name=f"constant({x})", value=x)
@@ -24,33 +26,33 @@ class Node:
         `name` : Readable label
         `value` : The value of a constant (only used by constant nodes)
     """
-    def __init__(self, op, inputs=None, name=None, value=None):
+    def __init__(self, op: str, inputs: list["Node"] | None = None, name: str | None = None, value=None) -> None:
         self.op = op
         self.inputs = inputs if inputs is not None else []
         self.id = _next_id()
         self.name = name if name is not None else f"n{self.id}"
         self.value = value
     
-    def __add__(self, other):
+    def __add__(self, other) -> "Node":
         return Node("add", [self, _wrap(other)])
     
-    def __sub__(self, other):
+    def __sub__(self, other) -> "Node":
         return Node("sub", [self, _wrap(other)])
     
-    def __mul__(self, other):
+    def __mul__(self, other) -> "Node":
         return Node("mul", [self, _wrap(other)])
 
-    def exp(self):
+    def exp(self) -> "Node":
         """
         Element-wise e to the power of the node's value 
         """
         return Node("exp", [self])
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         ins = ", ".join(inp.name for inp in self.inputs)
         return f"{self.name} = {self.op}({ins})"
     
-def placeholder(name) -> Node:
+def placeholder(name: str) -> Node:
     """
     A slot for data provided at runtime.
     """
@@ -62,9 +64,9 @@ def constant(value) -> Node:
     """
     return Node("constant", [], name=f"constant({value})", value=value)
 
-def relu(self) -> Node:
+def relu(self: "Node") -> Node:
     """
-    Element-wise max(0, x), as a method so expressions chain readably.
+    Element-wise max(0, x) of `self`.
     """
     return Node("relu", [self])
 
@@ -74,14 +76,14 @@ def matmul(a, b) -> Node:
     """
     return Node("matmul", [_wrap(a), _wrap(b)])
 
-def topological_order(root):
+def topological_order(root: "Node") -> list["Node"]:
     """
     Recursive Depth-first search of the topologically sorted graph.
     """
     order = []
     visited = set()
 
-    def visit(node):
+    def visit(node: "Node") -> None:
         if node in visited:
             return
         visited.add(node)
@@ -92,7 +94,7 @@ def topological_order(root):
     visit(root)
     return order
 
-def print_graph(root):
+def print_graph(root: "Node") -> None:
     """
     Pretty-print the whole graph in execution order.
     """

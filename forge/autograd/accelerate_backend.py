@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import array
 import ctypes
 
@@ -38,7 +40,7 @@ CBLAS_NO_TRANSPOSE = 111
 
 BYTES_PER_FLOAT = 4
 
-def accelerate_matmul(left_data, right_data, left_rows, shared_dim, right_cols):
+def accelerate_matmul(left_data: array.array[float], right_data: array.array[float], left_rows: int, shared_dim: int, right_cols: int) -> array.array[float]:
     """
     Multiplies two matrices on the CPU using Accelerate.
 

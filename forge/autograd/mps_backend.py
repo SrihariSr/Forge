@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import array
 
 try:
@@ -18,12 +20,12 @@ except Exception:
 _FLOAT_BYTES = 4
 GPU_MIN_WORK = 200000
 
-def _descriptor(rows, cols):
+def _descriptor(rows: int, cols: int):
     return MPS.MPSMatrixDescriptor.matrixDescriptorWithRows_columns_rowBytes_dataType_(
         rows, cols, cols * _FLOAT_BYTES, MPS.MPSDataTypeFloat32
     )
 
-def mps_matmul(a_data, b_data, m, k, n):
+def mps_matmul(a_data: array.array[float], b_data: array.array[float], m: int, k: int, n: int) -> array.array[float]:
     buf_a = _DEVICE.newBufferWithBytes_length_options_(
         a_data.tobytes(), m * k * _FLOAT_BYTES, _SHARED
     )

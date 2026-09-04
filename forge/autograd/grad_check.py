@@ -3,8 +3,14 @@ It is important to draw wisdom from many different places.
 If you take it from only one place, it becomes rigid and stale.
     - Uncle Iroh
 """
+from __future__ import annotations
 
-def grad_check(func, inputs, eps=1e-3, tol=1e-2):
+from typing import TYPE_CHECKING, Callable
+
+if TYPE_CHECKING:
+    from forge.tensor import Tensor
+
+def grad_check(func: Callable[..., "Tensor"], inputs: list["Tensor"], eps: float = 1e-3, tol: float = 1e-2) -> bool:
     """
     Using first principles for differentiation: df/dx = lim(h->0) [f(x + h) - f(x - h)] / 2h
     We use a small value of h to approximate the limit.

@@ -1,12 +1,18 @@
+from __future__ import annotations
+
 import array as _array
 import math
+from typing import TYPE_CHECKING
 from forge.autograd.engine import Function
+
+if TYPE_CHECKING:
+    from forge.tensor import Tensor
 
 
 class FusedLinearReLU(Function):
     """Fused matmul + bias add + ReLU in a single pass"""
 
-    def forward(self, x, weight_t, bias):
+    def forward(self, x: "Tensor", weight_t: "Tensor", bias: "Tensor") -> "Tensor":
         self.inputs = [x, weight_t, bias]
         self.save_for_backward(x, weight_t, bias)
         from forge.tensor import Tensor
@@ -15,7 +21,7 @@ class FusedLinearReLU(Function):
         n = x.shape[1]
         p = weight_t.shape[1]
 
-        new_data = _array.array(x.dtype.typecode, [])
+        new_data: _array.array = _array.array(x.dtype.typecode, [])
 
         for i in range(m):
             for j in range(p):
@@ -45,7 +51,7 @@ class FusedLinearReLU(Function):
         self._output = result
         return result
 
-    def backward(self, grad_output):
+    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
         x, weight_t, bias = self.saved_tensors
         output = self._output
         from forge.tensor import Tensor, _broadcast_shape, _broadcast_data

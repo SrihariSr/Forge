@@ -8,6 +8,8 @@ compiler and they are architecture-specific, so building them is a separate,
 explicit step rather than something that happens silently and fails obscurely.
 """
 
+from __future__ import annotations
+
 import os
 import subprocess
 import sys
@@ -15,7 +17,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
-def build():
+def build() -> None:
     source = os.path.join(HERE, "kernels.c")
     library = os.path.join(HERE, "kernels.so")
 

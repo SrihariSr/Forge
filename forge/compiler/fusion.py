@@ -1,8 +1,15 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from forge.compiler.graph import topological_order
+
+if TYPE_CHECKING:
+    from forge.compiler.graph import Node
 
 ELEMENTWISE_OPS = {"add", "sub", "mul", "relu", "exp"}
 
-def count_consumers(root) -> dict:
+def count_consumers(root: "Node") -> dict:
     """
     Counts how many nodes use each node as an input.
     """
@@ -15,7 +22,7 @@ def count_consumers(root) -> dict:
 
     return consumers
 
-def fuse(root) -> list:
+def fuse(root: "Node") -> list:
     """
     Partition element-wise operations into fusion groups. Each group is a list of nodes
     in execution order that becomes one fused kernel.
@@ -46,7 +53,7 @@ def fuse(root) -> list:
     groups.sort(key=lambda g: pos[g[-1]])
     return groups
 
-def print_groups(root, groups):
+def print_groups(root: "Node", groups: list[list["Node"]]) -> None:
     """
     Shows the fusion plan: each group (a future kernel) plus any unfused ops.
     """

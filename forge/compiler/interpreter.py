@@ -1,7 +1,13 @@
+from __future__ import annotations
+
 import ctypes
 import array
+from typing import TYPE_CHECKING
 from forge.compiler.graph import topological_order
 import os
+
+if TYPE_CHECKING:
+    from forge.compiler.graph import Node
 
 # The library sits beside this file, so locate it relative to __file__ rather
 # than the working directory. "./kernels.so" only worked when the compiler was
@@ -30,7 +36,7 @@ _lib.matmul.restype = None
 _lib.exp_kernel.argtypes = [_FP, _FP, ctypes.c_int]
 _lib.exp_kernel.restype = None
 
-def _addr(arr):
+def _addr(arr: array.array):
     """
     Memory address of an array's data as a float pointer in C.
     """
@@ -41,7 +47,7 @@ class Tensor:
     The numbers and their shape, stored at runtime. The interpreter generates
     `Tensor` instances at runtime.
     """
-    def __init__(self, data, shape):
+    def __init__(self, data: array.array, shape: tuple) -> None:
         self.data : array.array = data
         self.shape : tuple = shape
     
@@ -52,10 +58,10 @@ class Tensor:
             total *= d
         return total
     
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Tensor(shape={self.shape}, data={list(self.data)})"
     
-def _empty(shape) -> Tensor:
+def _empty(shape: tuple[int, ...]) -> Tensor:
     """
     Zero-filled tensor of shape `shape`.
     """
@@ -64,7 +70,7 @@ def _empty(shape) -> Tensor:
         total *= d
     return Tensor(array.array('f', bytes(4 * total)), shape)
 
-def run(root, feeds) -> Tensor:
+def run(root: "Node", feeds: dict[str, Tensor]) -> Tensor:
     """
     Execute the graph and return the final Tensor.
     """

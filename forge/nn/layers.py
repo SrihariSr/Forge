@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import math
 from forge.tensor import Tensor
 from forge.nn.module import Module
 from forge.nn.parameter import Parameter
-from forge.nn.module import Module
 from forge.autograd.fused_operations import FusedLinearReLU
 import random
 import array as _array
@@ -10,7 +11,7 @@ import array as _array
 class Linear(Module):
     """A fully connected layer: output = input @ weight.T + bias"""
 
-    def __init__(self, in_features, out_features, bias=True):
+    def __init__(self, in_features: int, out_features: int, bias: bool = True) -> None:
         super().__init__()
 
         k = 1 / math.sqrt(in_features) # Kaiming initialization
@@ -31,31 +32,43 @@ class Linear(Module):
         else:
             self.bias = None
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor: # Forward pass supports batching now
+        from forge.autograd.operations import FlattenBatch, UnflattenBatch
+
+        is_batched = len(x.shape) == 3
+
+        if is_batched:
+            batch = x.shape[0]
+            x = x._apply_op(FlattenBatch) # (batch, seq, in) -> (batch * seq, in)
+        
         output = x @ self.weight.T
         if self.bias is not None:
-            output = output + self.bias
+            output += self.bias
+        
+        if is_batched:
+            output = output._apply_op(UnflattenBatch, batch)
+        
         return output
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         in_f = self.weight.shape[1]
         out_f = self.weight.shape[0]
         return f"Linear(in_features={in_f}, out_features={out_f}, bias={self.bias is not None})"
 
 class ReLULayer(Module):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
     
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         return x.relu()
     
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "ReLU()"
 
 class FusedLinearReLULayer(Module):
     """Linear + ReLU fused into one operation for better performance."""
 
-    def __init__(self, in_features, out_features):
+    def __init__(self, in_features: int, out_features: int) -> None:
         super().__init__()
 
         k = 1 / math.sqrt(in_features)
@@ -72,7 +85,7 @@ class FusedLinearReLULayer(Module):
         bias_data = [random.uniform(-k, k) for _ in range(out_features)]
         self.bias = Parameter(Tensor(bias_data))
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         func = FusedLinearReLU()
         result = func.forward(x, self.weight.T, self.bias)
 
@@ -83,7 +96,7 @@ class FusedLinearReLULayer(Module):
 
         return result
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         in_f = self.weight.shape[1]
         out_f = self.weight.shape[0]
         return f"FusedLinearReLU(in_features={in_f}, out_features={out_f})"
@@ -91,18 +104,18 @@ class FusedLinearReLULayer(Module):
 class Sequential(Module):
     # A container that runs layers in sequence
 
-    def __init__(self, *layers):
+    def __init__(self, *layers: Module) -> None:
         super().__init__()
         for i, layer in enumerate(layers):
             setattr(self, f'layer_{i}', layer)
         self._layer_list = list(layers)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         for layer in self._layer_list:
             x = layer(x)
         return x
 
-    def optimize(self):
+    def optimize(self) -> "Sequential":
         # Apply fusion optimizations to this model
         from forge.autograd.fusion import optimize_model
         self._layer_list = optimize_model(self._layer_list)
@@ -114,7 +127,7 @@ class Sequential(Module):
 
         return self
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         lines = ["Sequential("]
         for i, layer in enumerate(self._layer_list):
             lines.append(f"  ({i}): {layer}")
@@ -122,7 +135,7 @@ class Sequential(Module):
         return "\n".join(lines)
 
 class Embedding(Module):
-    def __init__(self, num_embeddings, embedding_dim):
+    def __init__(self, num_embeddings: int, embedding_dim: int) -> None:
         super().__init__()
         self.num_embeddings = num_embeddings
         self.embedding_dim = embedding_dim
@@ -134,7 +147,7 @@ class Embedding(Module):
 
         self.weight = Parameter(Tensor(weight_data))
 
-    def forward(self, indices):
+    def forward(self, indices: list[list[int]]) -> Tensor:
         from forge.tensor import Tensor
         import array as _array
 
@@ -142,7 +155,7 @@ class Embedding(Module):
         seq_len = len(indices[0])
         dim = self.embedding_dim
 
-        new_data = _array.array(self.weight.dtype.typecode, [])
+        new_data: _array.array = _array.array(self.weight.dtype.typecode, [])
 
         for b in range(batch_size):
             for s in range(seq_len):
@@ -161,7 +174,7 @@ class Embedding(Module):
 
         weight_ref = self.weight
 
-        def _backward():
+        def _backward() -> None:
             if result.grad is None:
                 return
 
@@ -181,11 +194,11 @@ class Embedding(Module):
         result._backward_fn = _backward
         return result
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Embedding({self.num_embeddings}, {self.embedding_dim})"
 
 class SimpleAttention(Module):
-    def __init__(self, embed_dim):
+    def __init__(self, embed_dim: int) -> None:
         super().__init__()
         self.embed_dim = embed_dim
         self.scale = embed_dim ** 0.5
@@ -193,9 +206,12 @@ class SimpleAttention(Module):
         self.key = Linear(embed_dim, embed_dim)
         self.value = Linear(embed_dim, embed_dim)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
+            single = len(x.shape) == 2
+            if single:
+                x = x.unsqueeze_batch()
+
             batch_size = x.shape[0]
-            seq_len = x.shape[1]
 
             results = []
 
@@ -213,25 +229,29 @@ class SimpleAttention(Module):
 
                 results.append(output)
 
-            return results[0] if batch_size == 1 else results
+            if single:
+                return results[0]
 
-    def __repr__(self):
+            # Stack the per-sequence results back into one batched tensor.
+            # Returning a plain Python list here breaks every layer downstream.
+            return results[0].stack_batch(*results[1:])
+
+    def __repr__(self) -> str:
         return f"SimpleAttention (embed_dim={self.embed_dim})"
 
 class TransformerBlock(Module):
-    def __init__(self, embed_dim, ff_dim):
+    def __init__(self, embed_dim: int, ff_dim: int) -> None:
         super().__init__()
         self.attention = SimpleAttention(embed_dim)
         self.ff1 = Linear(embed_dim, ff_dim)
         self.ff2 = Linear(ff_dim, embed_dim)
     
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         # Self-attention
         attended = self.attention(x)
 
         # Add residual connection
-        x_2d = self._to_2d(x)
-        hidden = attended + x_2d
+        hidden = attended + x
 
         # Feed-forward network
         ff_out = self.ff1(hidden).relu()
@@ -241,16 +261,11 @@ class TransformerBlock(Module):
         output = ff_out + hidden
         return output
     
-    def _to_2d(self, x):
-         if len(x.shape) == 2:
-             return x
-         return x.select_batch(0)
-
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"TransformerBlock(embed_dim={self.attention.embed_dim})"
 
 class CharTransformer(Module):
-    def __init__(self, vocab_size, embed_dim, ff_dim, seq_len):
+    def __init__(self, vocab_size: int, embed_dim: int, ff_dim: int, seq_len: int) -> None:
         super().__init__()
         self.embed_dim = embed_dim
         self.seq_len = seq_len
@@ -263,7 +278,7 @@ class CharTransformer(Module):
         self.transformer = TransformerBlock(embed_dim, ff_dim)
         self.output_proj = Linear(embed_dim, vocab_size)
     
-    def forward(self, indices):
+    def forward(self, indices: list[list[int]]) -> Tensor:
         # Embed characters
         x = self.embedding(indices)
         
@@ -278,7 +293,7 @@ class CharTransformer(Module):
 
         return logits
     
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"CharTransformer(\n"
             f"embedding={self.embedding}\n"
@@ -290,27 +305,42 @@ class LayerNorm(Module):
     Rescales a row of numbers such that the mean = 0 and standard deviation = 1
     to ensure numerical stability.
     """
-    def __init__(self, embed_dim, eps=1e-5):
+    def __init__(self, embed_dim: int, eps: float = 1e-5) -> None:
         super().__init__()
         self.embed_dim = embed_dim
         self.eps = eps
         self.gain = Parameter(Tensor([[1.0] * embed_dim]))
         self.bias = Parameter(Tensor([[0.0] * embed_dim]))
     
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
+        from forge.autograd.operations import FlattenBatch, UnflattenBatch
+
+        is_batched = len(x.shape) == 3
+        if is_batched:
+            batch = x.shape[0]
+            x = x._apply_op(FlattenBatch)
+
         mean = x.row_mean()
         centred = x - mean
         variance = (centred ** 2).row_mean()
+
+        # eps guards the case where every feature in a row is identical, which
+        # gives zero variance and would otherwise divide by zero.
         std = (variance + self.eps).sqrt()
         normalised = centred / std
 
-        return (self.gain * normalised) + self.bias
-    
-    def __repr__(self):
-        return f"LayerNorm(embed_dim={self.embed}, eps={self.eps})"
+        out = (self.gain * normalised) + self.bias
+
+        if is_batched:
+            out = out._apply_op(UnflattenBatch, batch)
+
+        return out
+
+    def __repr__(self) -> str:
+        return f"LayerNorm(embed_dim={self.embed_dim}, eps={self.eps})"
 
 class MultiHeadAttention(Module):
-    def __init__(self, embed_dim, num_heads):
+    def __init__(self, embed_dim: int, num_heads: int) -> None:
         super().__init__()
         self.embed_dim = embed_dim
         self.num_heads = num_heads
@@ -325,26 +355,26 @@ class MultiHeadAttention(Module):
             setattr(self, f"key_{n}", Linear(embed_dim, self.head_dim))
             setattr(self, f"value_{n}", Linear(embed_dim, self.head_dim))
 
-    def query(self, n):
+    def query(self, n: int) -> Linear:
         return getattr(self, f"query_{n}")
 
-    def key(self, n):
+    def key(self, n: int) -> Linear:
         return getattr(self, f"key_{n}")
 
-    def value(self, n):
+    def value(self, n: int) -> Linear:
         return getattr(self, f"value_{n}")
 
-        for n in range(num_heads):
-            setattr(self, f"query_{n}", self.queries[n])
-            setattr(self, f"key{n}", self.keys[n])
-            setattr(self, f"value_{n}", self.values[n])
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
+        is_single = len(x.shape) == 2
+        if is_single:
+            x = x.unsqueeze_batch()
+        
         batch_size = x.shape[0]
         results = []
 
         for b in range(batch_size):
             x_2d = x.select_batch(b)
-
+        
             head_outputs = []
             for n in range(self.num_heads):
                 q = self.query(n)(x_2d)
@@ -353,8 +383,8 @@ class MultiHeadAttention(Module):
 
                 # How much should each position attend to each other position
                 scores = (q @ k.T) / self.scale
-
-                # Masking every position after it
+                
+                # Masking the scores after it
                 scores = scores.causal_mask()
 
                 weights = scores.softmax()
@@ -362,14 +392,18 @@ class MultiHeadAttention(Module):
 
             combined = head_outputs[0].concat_columns(*head_outputs[1:])
             results.append(self.out_proj(combined))
-
-        return results[0] if batch_size == 1 else results
         
-    def __repr__(self):
+        if is_single:
+            return results[0]
+
+        return results[0].stack_batch(*results[1:])
+
+
+    def __repr__(self) -> str:
         return (f"MultiHeadAttention(embed_dim={self.embed_dim})\nnum_heads={self.num_heads}\nhead_dim={self.head_dim}")
 
 class GPTBlock(Module):
-    def __init__(self, embed_dim, num_heads, ff_dim):
+    def __init__(self, embed_dim: int, num_heads: int, ff_dim: int) -> None:
         super().__init__()
         self.norm1 = LayerNorm(embed_dim)
         self.norm2 = LayerNorm(embed_dim)
@@ -377,33 +411,33 @@ class GPTBlock(Module):
         self.ff1 = Linear(embed_dim, ff_dim)
         self.ff2 = Linear(ff_dim, embed_dim)
 
-    def forward(self, x_2d):
+    def forward(self, x: Tensor) -> Tensor:
         # Attention sub-layer
-        normed = self.norm1(x_2d)
-        attended = self.attention(normed.unsqueeze_batch())
-        x_2d += attended # Residual
+        normed = self.norm1(x)
+        attended = self.attention(normed)
+        x = x + attended
 
         # Feed-forward sub-layer
-        normed = self.norm2(x_2d)
+        normed = self.norm2(x)
         ff_out = self.ff2(self.ff1(normed).gelu())
-        x_2d += ff_out
+        x = x + ff_out
 
-        return x_2d
+        return x
 
-        def __repr__(self):
-            return f"GPTBlock(embd_dim={self.attention.embed_dim}), heads={self.attention.num_heads}"
+    def __repr__(self) -> str:
+        return f"GPTBlock(embed_dim={self.attention.embed_dim}, heads={self.attention.num_heads})"
         
 class GPT(Module):
     """
     A small decoder-only transformer.
     """
     def __init__(self,
-    vocab_size,
-    embed_dim,
-    num_heads,
-    ff_dim,
-    num_layers,
-    seq_len):
+    vocab_size: int,
+    embed_dim: int,
+    num_heads: int,
+    ff_dim: int,
+    num_layers: int,
+    seq_len: int) -> None:
         super().__init__()
         self.vocab_size = vocab_size
         self.embed_dim = embed_dim
@@ -427,11 +461,12 @@ class GPT(Module):
         # Project back to one score ("logit") per vocabulary entry
         self.output_proj = Linear(embed_dim, vocab_size)
     
-    def forward(self, indices):
+    def forward(self, indices: list[list[int]]) -> Tensor:
         x = self.embedding(indices)
-        x = x + self.pos_embedding # Inject position info
-        x = x.select_batch(0) # Drop to 2D for the blocks
+        x = x + self.pos_embedding # Inject position info; broadcasts over the batch
 
+        # Every layer below is rank-preserving, so the batch dimension is kept
+        # all the way through to the logits.
         for block in self.blocks:
             x = block(x)
         
@@ -439,6 +474,5 @@ class GPT(Module):
         logits = self.output_proj(x)
         return logits
 
-        def __repr__(self):
-            return f"GPT(vocab={self.vocab_size}, embed={self.embed_dim}, layers={self.num_layers}, seq_len={self.seq_len})"
-        
+    def __repr__(self) -> str:
+        return f"GPT(vocab={self.vocab_size}, embed={self.embed_dim}, layers={self.num_layers}, seq_len={self.seq_len})"

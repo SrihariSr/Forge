@@ -1,12 +1,19 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from forge.nn.parameter import Parameter
+
+if TYPE_CHECKING:
+    from forge.tensor import Tensor
 
 
 class Module:
     """Base class for all neural network modules."""
 
-    def __init__(self):
-        self._Parameters = {}
-        self._modules = {}
+    def __init__(self) -> None:
+        self._Parameters: dict[str, Parameter] = {}
+        self._modules: dict[str, "Module"] = {}
         self.training = True
 
     def forward(self, *args):
@@ -15,7 +22,7 @@ class Module:
     def __call__(self, *args):
         return self.forward(*args)
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value) -> None:
         if isinstance(value, Parameter):
             if '_Parameters' not in self.__dict__:
                 self.__dict__['_Parameters'] = {}
@@ -26,7 +33,7 @@ class Module:
             self._modules[name] = value
         super().__setattr__(name, value)
 
-    def Parameters(self):
+    def Parameters(self) -> list[Parameter]:
         # Return all Parameters, including from child modules.
         params = list(self._Parameters.values())
         for module in self._modules.values():
@@ -34,28 +41,28 @@ class Module:
 
         return params
 
-    def parameters(self):
+    def parameters(self) -> list[Parameter]:
         return self.Parameters()
 
-    def zero_grad(self):
+    def zero_grad(self) -> None:
         # Reset all Parameter gradients to None.
         for param in self.Parameters():
             param.grad = None
 
-    def train(self):
+    def train(self) -> None:
         # Set module to training mode.
         self.training = True
         for module in self._modules.values():
             module.train()
 
-    def eval(self):
+    def eval(self) -> None:
         # Set module to evaluation mode.
         self.training = False
         for module in self._modules.values():
             module.eval()
 
     
-    def state_dict(self):
+    def state_dict(self) -> dict[str, Parameter]:
         # Return a dictionary of all parameters with their names
         state = {}
 
@@ -71,7 +78,7 @@ class Module:
 
         return state
 
-    def load_state_dict(self, state):
+    def load_state_dict(self, state: dict[str, "Tensor"]) -> None:
         # Load parameters from a state dictionary
         own_state = self.state_dict()
 

@@ -1,7 +1,13 @@
+from __future__ import annotations
+
 import json
 import array as _array
+from typing import TYPE_CHECKING
 
-def save_model(model, filepath):
+if TYPE_CHECKING:
+    from forge.nn.module import Module
+
+def save_model(model: "Module", filepath: str) -> None:
     """Save a model's parameters to a file"""
     state = model.state_dict()
 
@@ -22,7 +28,7 @@ def save_model(model, filepath):
     print(f"  Total values: {total}")
 
 
-def load_model(model, filepath):
+def load_model(model: "Module", filepath: str) -> None:
     # Load parameters from a file into a model
     from forge.tensor import Tensor
     from forge.dtype import float32, float64, int32, int64
