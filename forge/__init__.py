@@ -10,7 +10,7 @@ from forge.tensor import Tensor
 from forge.dtype import float32, float64, int32, int64
 from forge.serialization import save_model, load_model
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "Tensor",
