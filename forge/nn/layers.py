@@ -115,7 +115,7 @@ class Sequential(Module):
             x = layer(x)
         return x
 
-    def optimize(self) -> "Sequential":
+    def optimize(self) -> Sequential:
         # Apply fusion optimizations to this model
         from forge.autograd.fusion import optimize_model
         self._layer_list = optimize_model(self._layer_list)
@@ -344,6 +344,10 @@ class MultiHeadAttention(Module):
         super().__init__()
         self.embed_dim = embed_dim
         self.num_heads = num_heads
+        if embed_dim % num_heads != 0:
+            raise ValueError(
+                f"embed_dim {embed_dim} must divide evenly into "
+                f"{num_heads} heads")
         self.head_dim = embed_dim // num_heads
         self.scale = self.head_dim ** 0.5
         self.out_proj = Linear(embed_dim, embed_dim)

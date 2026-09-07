@@ -7,7 +7,9 @@ if TYPE_CHECKING:
 
 import array as _array
 from forge.dtype import Dtype, DEFAULT_DTYPE
-from forge.autograd.operations import Add, Mul, Sub, Pow, Neg, Sum
+from forge.autograd.operations import (
+    Add, Mul, Sub, Div, Pow, Neg, Sum, _result_dtype, _float_dtype,
+)
 
 def _flatten(data) -> list[float]:
     if isinstance(data, (int, float)):
@@ -16,6 +18,21 @@ def _flatten(data) -> list[float]:
     for element in data:
         result.extend(_flatten(element))
     return result
+
+
+def _scalar_dtype(scalar: int | float, dtype: Dtype) -> Dtype:
+    """
+    The dtype to wrap a Python scalar in before combining it with a tensor.
+
+    Never plain `Tensor(scalar)` — that applies the default dtype, so
+    `1.0 - float64_tensor` would come back float32. An int scalar takes the
+    tensor's own dtype, which keeps integer tensors integral; a float scalar
+    cannot live in an integer array, so it takes the float dtype the result
+    would be promoted to anyway.
+    """
+    if isinstance(scalar, float):
+        return _float_dtype(dtype)
+    return dtype
 
 
 def _infer_shape(data) -> tuple[int, ...]:
@@ -70,7 +87,9 @@ def _broadcast_data(data: _array.array, shape: tuple[int, ...], new_shape: tuple
     for s in new_shape:
         total *= s
 
-    new_data = _array.array(dtype_typecode, [0.0] * total)
+    # array() rejects a float fill for an integer typecode.
+    zero = 0.0 if dtype_typecode in "fd" else 0
+    new_data = _array.array(dtype_typecode, [zero] * total)
     for flat_idx in range(total):
         # Convert flat index to multidimensional index in new_shape
         remaining = flat_idx
@@ -91,7 +110,7 @@ class Tensor:
     _data: _array.array
     shape: tuple[int, ...]
     dtype: Dtype
-    _backward_fn: "Callable[[], None] | None"
+    _backward_fn: Callable[[], None] | None
     requires_grad = False
     grad = None
     _grad_fn = None
@@ -119,7 +138,7 @@ class Tensor:
         self.grad = None
         self._grad_fn = None
 
-    def _rebuild_nested(self) -> "float | list":
+    def _rebuild_nested(self) -> float | list:
         if self.shape == ():
             return self._data[0]
 
@@ -141,7 +160,7 @@ class Tensor:
             return f"tensor({data_str})"
         return f"tensor({data_str}, dtype={self.dtype})"
 
-    def size(self, dim: int | None = None) -> "int | tuple[int, ...]":
+    def size(self, dim: int | None = None) -> int | tuple[int, ...]:
         if dim is not None:
             return self.shape[dim]
         return self.shape
@@ -155,7 +174,7 @@ class Tensor:
             number *= x
         return number
 
-    def allclose(self, other: "Tensor", rtol: float = 1e-5, atol: float = 1e-6) -> bool:
+    def allclose(self, other: Tensor, rtol: float = 1e-5, atol: float = 1e-6) -> bool:
         """
         `True` when every element matches `other` within tolerance.
 
@@ -174,11 +193,17 @@ class Tensor:
             for x, y in zip(self._data, other._data)
         )
 
-    def __getitem__(self, index: "int | tuple[int, ...]") -> "float | Tensor":
+    def __getitem__(self, index: int | tuple[int, ...]) -> float | Tensor:
         if not isinstance(index, tuple):
             index = (index,)
 
         if len(index) == len(self.shape):
+            for axis, idx in enumerate(index):
+                if not -self.shape[axis] <= idx < self.shape[axis]:
+                    raise IndexError(
+                        f"index {idx} is out of bounds for axis {axis} "
+                        f"with size {self.shape[axis]}")
+
             flat_index = 0
             multiplier = 1
             for i in range(len(self.shape) - 1, -1, -1):
@@ -212,7 +237,7 @@ class Tensor:
 
         raise IndexError("Too many indices for tensor!")
 
-    def __setitem__(self, index: "int | tuple[int, ...]", value: float) -> None:
+    def __setitem__(self, index: int | tuple[int, ...], value: float) -> None:
         if not isinstance(index, tuple):
             index = (index,)
 
@@ -228,7 +253,7 @@ class Tensor:
         self._data[flat_index] = value
 
     @staticmethod
-    def zeros(*shape: int, dtype: Dtype | None = None) -> "Tensor":
+    def zeros(*shape: int, dtype: Dtype | None = None) -> Tensor:
         if dtype is None:
             dtype = DEFAULT_DTYPE
         total = 1
@@ -244,7 +269,7 @@ class Tensor:
         return result
 
     @staticmethod
-    def ones(*shape: int, dtype: Dtype | None = None) -> "Tensor":
+    def ones(*shape: int, dtype: Dtype | None = None) -> Tensor:
         if dtype is None:
             dtype = DEFAULT_DTYPE
         total = 1
@@ -260,7 +285,7 @@ class Tensor:
         return result
 
     @staticmethod
-    def full(shape: tuple[int, ...], fill_value: float, dtype: Dtype | None = None) -> "Tensor":
+    def full(shape: tuple[int, ...], fill_value: float, dtype: Dtype | None = None) -> Tensor:
         if dtype is None:
             dtype = DEFAULT_DTYPE
         total = 1
@@ -275,7 +300,7 @@ class Tensor:
         result._grad_fn = None
         return result
 
-    def _elementwise_op(self, other: "Tensor | int | float", op: Callable[[float, float], float]) -> "Tensor":
+    def _elementwise_op(self, other: Tensor | int | float, op: Callable[[float, float], float]) -> Tensor:
         if isinstance(other, (int, float)):
             new_data = _array.array(self.dtype.typecode, [op(x, other) for x in self._data])
             result = Tensor.__new__(Tensor)
@@ -305,78 +330,76 @@ class Tensor:
         result._grad_fn = None
         return result
 
-    def __add__(self, other: "Tensor | int | float") -> "Tensor":
+    def __add__(self, other: Tensor | int | float) -> Tensor:
         if isinstance(other, (int, float)):
-            other = Tensor(other)
+            other = Tensor(other, dtype=_scalar_dtype(other, self.dtype))
         return self._apply_op(Add, other)
 
-    def __sub__(self, other: "Tensor | int | float") -> "Tensor":
+    def __sub__(self, other: Tensor | int | float) -> Tensor:
         if isinstance(other, (int, float)):
-            other = Tensor(other)
+            other = Tensor(other, dtype=_scalar_dtype(other, self.dtype))
         return self._apply_op(Sub, other)
 
-    def __mul__(self, other: "Tensor | int | float") -> "Tensor":
-        if (isinstance(other, (int, float))):
-            other = Tensor(other)
+    def __mul__(self, other: Tensor | int | float) -> Tensor:
+        if isinstance(other, (int, float)):
+            other = Tensor(other, dtype=_scalar_dtype(other, self.dtype))
         return self._apply_op(Mul, other)
 
-    def __truediv__(self, other: "Tensor | int | float") -> "Tensor":
-        # return self._elementwise_op(other, lambda a, b: a / b)
+    def __truediv__(self, other: Tensor | int | float) -> Tensor:
         if isinstance(other, (int, float)):
-            other = Tensor(other, dtype=self.dtype)
-        
-        return self._apply_op(Mul, other ** -1)
+            other = Tensor(other, dtype=_scalar_dtype(other, self.dtype))
+        return self._apply_op(Div, other)
 
-    def __radd__(self, other: "Tensor | int | float") -> "Tensor":
+    def __radd__(self, other: Tensor | int | float) -> Tensor:
         if isinstance(other, (int, float)):
-            other = Tensor(other)
+            other = Tensor(other, dtype=_scalar_dtype(other, self.dtype))
         return self.__add__(other)
 
-    def __rsub__(self, other: "Tensor | int | float") -> "Tensor":
+    def __rsub__(self, other: Tensor | int | float) -> Tensor:
         if isinstance(other, (int, float)):
-            other = Tensor(other)
+            other = Tensor(other, dtype=_scalar_dtype(other, self.dtype))
         return other._apply_op(Sub, self)
 
-    def __rmul__(self, other: "Tensor | int | float") -> "Tensor":
+    def __rmul__(self, other: Tensor | int | float) -> Tensor:
         if isinstance(other, (int, float)):
-            other = Tensor(other)
+            other = Tensor(other, dtype=_scalar_dtype(other, self.dtype))
         return self._apply_op(Mul, other)
 
-    def __rtruediv__(self, other: "Tensor | int | float") -> "Tensor":
+    def __rtruediv__(self, other: Tensor | int | float) -> Tensor:
         if isinstance(other, (int, float)):
-            other = Tensor(other)
-        return other._apply_op(Mul, self ** -1)
+            other = Tensor(other, dtype=_scalar_dtype(other, self.dtype))
+        return other._apply_op(Div, self)
 
-    def __neg__(self) -> "Tensor":
+    def __neg__(self) -> Tensor:
         return self._apply_op(Neg)
 
-    def __pow__(self, exp: int | float) -> "Tensor":
+    def __pow__(self, exp: int | float) -> Tensor:
         return self._apply_op(Pow, exp)
 
-    def sum(self) -> "Tensor":
+    def sum(self) -> Tensor:
         from forge.autograd.operations import Sum
         return self._apply_op(Sum)
 
-    def mean(self) -> "Tensor":
+    def mean(self) -> Tensor:
         from forge.autograd.operations import Mean
         return self._apply_op(Mean)
 
-    def row_mean(self) -> "Tensor":
+    def row_mean(self) -> Tensor:
         from forge.autograd.operations import RowMean
         return self._apply_op(RowMean)
 
-    def sqrt(self) -> "Tensor":
+    def sqrt(self) -> Tensor:
         from forge.autograd.operations import Sqrt
         return self._apply_op(Sqrt)
 
-    def matmul(self, other: "Tensor") -> "Tensor":
+    def matmul(self, other: Tensor) -> Tensor:
         from forge.autograd.operations import Matmul
         return self._apply_op(Matmul, other)
 
-    def __matmul__(self, other: "Tensor") -> "Tensor":
+    def __matmul__(self, other: Tensor) -> Tensor:
         return self.matmul(other)
 
-    def reshape(self, *new_shape: int) -> "Tensor":
+    def reshape(self, *new_shape: int) -> Tensor:
         new_total = 1
         for x in new_shape:
             new_total *= x
@@ -398,17 +421,17 @@ class Tensor:
         result._grad_fn = None
         return result
 
-    def transpose(self) -> "Tensor":
+    def transpose(self) -> Tensor:
         if len(self.shape) != 2:
             raise ValueError("Transpose only supports 2D tensors")
         from forge.autograd.operations import Transpose
         return self._apply_op(Transpose)
 
     @property # X.transpose() would be the same as X.T
-    def T(self) -> "Tensor":
+    def T(self) -> Tensor:
         return self.transpose()
 
-    def _apply_op(self, op_class: type["Function"], *args) -> "Tensor":
+    def _apply_op(self, op_class: type[Function], *args) -> Tensor:
         """Apply an operation, recording it in the graph if needed."""
         func = op_class()
         result = func.forward(self, *args)
@@ -431,7 +454,7 @@ class Tensor:
         topo = []
         visited = set()
 
-        def build_topo(tensor: "Tensor") -> None:
+        def build_topo(tensor: Tensor) -> None:
             if id(tensor) not in visited:
                 visited.add(id(tensor))
                 if tensor._grad_fn is not None:
@@ -442,7 +465,9 @@ class Tensor:
 
         build_topo(self)
 
-        self.grad = Tensor(1.0)
+        # Seed with THIS tensor's dtype, so a float64 loss does not start its
+        # backward pass in float32.
+        self.grad = Tensor(1.0, dtype=_result_dtype(self.dtype))
 
         for tensor in reversed(topo):
             # Handle custom backward (used by CrossEntropyLoss)
@@ -458,62 +483,61 @@ class Tensor:
                         else:
                             inp.grad = inp.grad + grad
 
-    def relu(self) -> "Tensor":
+    def relu(self) -> Tensor:
         from forge.autograd.operations import Relu
         return self._apply_op(Relu)
 
-    def sigmoid(self) -> "Tensor":
+    def sigmoid(self) -> Tensor:
         from forge.autograd.operations import Sigmoid
         return self._apply_op(Sigmoid)
 
-    def tanh(self) -> "Tensor":
+    def tanh(self) -> Tensor:
         from forge.autograd.operations import Tanh
         return self._apply_op(Tanh)
 
-    def log(self) -> "Tensor":
+    def log(self) -> Tensor:
         from forge.autograd.operations import Log
         return self._apply_op(Log)
 
-    def clamp(self, min_val: float, max_val: float) -> "Tensor":
+    def clamp(self, min_val: float, max_val: float) -> Tensor:
         from forge.autograd.operations import Clamp
         return self._apply_op(Clamp, min_val, max_val)
     
-    def softmax(self) -> "Tensor":
+    def softmax(self) -> Tensor:
         from forge.autograd.operations import Softmax
         return self._apply_op(Softmax)
     
-    def select_batch(self, b: int) -> "Tensor":
+    def select_batch(self, b: int) -> Tensor:
         from forge.autograd.operations import SelectBatch
         return self._apply_op(SelectBatch, b)
     
-    def causal_mask(self) -> "Tensor":
+    def causal_mask(self) -> Tensor:
         if len(self.shape) == 3:
             from forge.autograd.operations import BatchedCausalMask
             return self._apply_op(BatchedCausalMask)
         from forge.autograd.operations import CausalMask
         return self._apply_op(CausalMask)
 
-
-    def stack_batch(self, *others: "Tensor") -> "Tensor":
+    def stack_batch(self, *others: Tensor) -> Tensor:
         from forge.autograd.operations import StackBatch
         return self._apply_op(StackBatch, *others)
 
-    def concat_columns(self, *others: "Tensor") -> "Tensor":
+    def concat_columns(self, *others: Tensor) -> Tensor:
         from forge.autograd.operations import ConcatColumns
         return self._apply_op(ConcatColumns, *others)
         
-    def gelu(self) -> "Tensor":
+    def gelu(self) -> Tensor:
         from forge.autograd.operations import Gelu
         return self._apply_op(Gelu)
     
-    def unsqueeze_batch(self) -> "Tensor":
+    def unsqueeze_batch(self) -> Tensor:
         from forge.autograd.operations import UnsqueezeBatch
         return self._apply_op(UnsqueezeBatch)
     
-    def exp(self) -> "Tensor":
+    def exp(self) -> Tensor:
         from forge.autograd.operations import Exp
         return self._apply_op(Exp)
     
-    def batched_matmul(self, other: "Tensor") -> "Tensor":
+    def batched_matmul(self, other: Tensor) -> Tensor:
         from forge.autograd.operations import BatchedMatmul
         return self._apply_op(BatchedMatmul, other)

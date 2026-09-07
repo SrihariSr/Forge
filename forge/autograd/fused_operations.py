@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 class FusedLinearReLU(Function):
     """Fused matmul + bias add + ReLU in a single pass"""
 
-    def forward(self, x: "Tensor", weight_t: "Tensor", bias: "Tensor") -> "Tensor":
+    def forward(self, x: Tensor, weight_t: Tensor, bias: Tensor) -> Tensor:
         self.inputs = [x, weight_t, bias]
         self.save_for_backward(x, weight_t, bias)
         from forge.tensor import Tensor
@@ -51,7 +51,7 @@ class FusedLinearReLU(Function):
         self._output = result
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         x, weight_t, bias = self.saved_tensors
         output = self._output
         from forge.tensor import Tensor, _broadcast_shape, _broadcast_data

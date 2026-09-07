@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 ELEMENTWISE_OPS = {"add", "sub", "mul", "relu", "exp"}
 
-def count_consumers(root: "Node") -> dict:
+def count_consumers(root: Node) -> dict:
     """
     Counts how many nodes use each node as an input.
     """
@@ -22,7 +22,7 @@ def count_consumers(root: "Node") -> dict:
 
     return consumers
 
-def fuse(root: "Node") -> list:
+def fuse(root: Node) -> list:
     """
     Partition element-wise operations into fusion groups. Each group is a list of nodes
     in execution order that becomes one fused kernel.
@@ -53,7 +53,7 @@ def fuse(root: "Node") -> list:
     groups.sort(key=lambda g: pos[g[-1]])
     return groups
 
-def print_groups(root: "Node", groups: list[list["Node"]]) -> None:
+def print_groups(root: Node, groups: list[list[Node]]) -> None:
     """
     Shows the fusion plan: each group (a future kernel) plus any unfused ops.
     """

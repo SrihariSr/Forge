@@ -8,12 +8,12 @@ if TYPE_CHECKING:
     from forge.nn.module import Module
 
 
-def optimize_model(layers: list) -> list["Module"]:
+def optimize_model(layers: list) -> list[Module]:
     """
     Takes a list of layers and returns an optimized list
     with fused operations where possible.
     """
-    optimized: list["Module"] = []
+    optimized: list[Module] = []
     i = 0
 
     while i < len(layers):

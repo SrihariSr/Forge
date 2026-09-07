@@ -17,7 +17,7 @@ C_EXP = {
     "exp": "expf({})" # expf is the float version of e^x in C's standard library
 }
 
-def generate_c(group: list["Node"], group_inputs: list["Node"], func_name: str = "fused_kernel") -> str:
+def generate_c(group: list[Node], group_inputs: list[Node], func_name: str="fused_kernel") -> str:
     """
     Build the C source for one fused group.
       `group`        : nodes in the group, in execution order.
@@ -85,7 +85,7 @@ def compile_and_load(c_source: str, func_name: str, num_inputs: int):
 
     return fn
 
-def group_external_inputs(group: list["Node"]) -> list["Node"]:
+def group_external_inputs(group: list[Node]) -> list[Node]:
     """
     Works out which values a fused group needs to read from memory.
     """

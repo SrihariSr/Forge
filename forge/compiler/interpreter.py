@@ -9,9 +9,6 @@ import os
 if TYPE_CHECKING:
     from forge.compiler.graph import Node
 
-# The library sits beside this file, so locate it relative to __file__ rather
-# than the working directory. "./kernels.so" only worked when the compiler was
-# run from inside its own folder.
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _SO = os.path.join(_HERE, "kernels.so")
 
@@ -29,6 +26,7 @@ for _name in ("add", "sub", "mul"):
     _fn = getattr(_lib, _name)
     _fn.argtypes = [_FP, _FP, _FP, ctypes.c_int]
     _fn.restype = None
+
 _lib.relu.argtypes = [_FP, _FP, ctypes.c_int]
 _lib.relu.restype = None
 _lib.matmul.argtypes = [_FP, _FP, _FP, ctypes.c_int, ctypes.c_int, ctypes.c_int]
@@ -70,7 +68,7 @@ def _empty(shape: tuple[int, ...]) -> Tensor:
         total *= d
     return Tensor(array.array('f', bytes(4 * total)), shape)
 
-def run(root: "Node", feeds: dict[str, Tensor]) -> Tensor:
+def run(root: Node, feeds: dict[str, Tensor]) -> Tensor:
     """
     Execute the graph and return the final Tensor.
     """

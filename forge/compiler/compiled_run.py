@@ -10,7 +10,7 @@ from forge.compiler.interpreter import Tensor, _empty, _addr, _lib
 if TYPE_CHECKING:
     from forge.compiler.graph import Node
 
-def compile_graph(root: "Node") -> list[tuple]:
+def compile_graph(root: Node) -> list[tuple]:
     """
     Turns a graph into an executable plan by:
      - Group the nodes.
@@ -61,7 +61,7 @@ def compile_graph(root: "Node") -> list[tuple]:
 
     return steps
 
-def run_compiled(root: "Node", steps: list[tuple], feeds: dict[str, Tensor]) -> Tensor:
+def run_compiled(root: Node, steps: list[tuple], feeds: dict[str, Tensor]) -> Tensor:
     """
     Execute a compiled plan on real data.
 

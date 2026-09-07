@@ -53,7 +53,7 @@ from forge.nn import GPT, CrossEntropyLoss
 from forge.optim import Adam
 
 model = GPT(vocab_size=65, embed_dim=128, num_heads=4,
-            ff_dim=256, num_layers=4, seq_len=32)
+            ff_dim=256, num_layers=4, seq_len=4)
 criterion = CrossEntropyLoss()
 optimizer = Adam(model.parameters(), lr=0.002)
 
@@ -89,7 +89,7 @@ The C kernels are not built during installation, because they need a compiler an
 python -m forge.compiler.build
 ```
 
-Importing `forge.compiler` before running that raises an error telling you to.
+The kernels must be built before the compiled execution path can be used. Using that path without them raises an error naming the build command above.
 
 ```python
 from forge.compiler import placeholder, relu, compile_graph, run_compiled
@@ -138,7 +138,7 @@ How the matmul got there, with the same arithmetic throughout:
 | restrict | 32.0ms | 28 | 1.00x | 11.0x |
 | Threading and tuning | 3.8ms | 238 | 8.4x | 92.0x |
 
-Against OpenBLAS, called through NumPy on the same machine, at 768 x 768: 234 GFLOPS against 351, a gap of 1.5x.
+Against Apple Accelerate, called through NumPy on the same machine, at 768 x 768: 234 GFLOPS against 351, a gap of 1.5x.
 
 A 550,977-parameter GPT trained on the tinyshakespeare corpus with data-parallel training across 8 CPU cores brought character-level cross-entropy from 3.66 to 1.44 over 33,113 steps.
 

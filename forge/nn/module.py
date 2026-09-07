@@ -13,7 +13,7 @@ class Module:
 
     def __init__(self) -> None:
         self._Parameters: dict[str, Parameter] = {}
-        self._modules: dict[str, "Module"] = {}
+        self._modules: dict[str, Module] = {}
         self.training = True
 
     def forward(self, *args):
@@ -78,7 +78,7 @@ class Module:
 
         return state
 
-    def load_state_dict(self, state: dict[str, "Tensor"]) -> None:
+    def load_state_dict(self, state: dict[str, Tensor]) -> None:
         # Load parameters from a state dictionary
         own_state = self.state_dict()
 

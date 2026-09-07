@@ -1,3 +1,10 @@
+import os
+import sys
+
+# The repository root is one level up from tools/. Add it to the path so this
+# runs from anywhere, the same way the sidequests scripts do.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import array
 import ctypes
 import os

@@ -9,7 +9,46 @@ from forge.autograd.engine import Function
 import array as _array
 import math as _math
 
-def _unbroadcast(grad: "Tensor", original_shape: tuple[int, ...]) -> "Tensor":
+# Widening order for mixed-dtype arithmetic: the result takes whichever operand
+# dtype can hold both.
+_DTYPE_RANK = {"i": 0, "l": 1, "f": 2, "d": 3}
+
+
+def _promote_dtype(a, b):
+    """The dtype a binary op should return for operands of dtypes `a` and `b`."""
+    if a == b:
+        return a
+    rank_a = _DTYPE_RANK.get(a.typecode)
+    rank_b = _DTYPE_RANK.get(b.typecode)
+    if rank_a is None or rank_b is None:
+        return a
+    return a if rank_a >= rank_b else b
+
+
+def _float_dtype(dtype):
+    """
+    The dtype to use when a result cannot be held by an integer type.
+
+    float32 and float64 pass through, so a float64 graph stays in float64.
+    Integer dtypes fall back to the default, since results like `1 / 2` and
+    `2 ** -1` have no integer representation.
+    """
+    from forge.dtype import float32, float64, DEFAULT_DTYPE
+    return dtype if dtype in (float32, float64) else DEFAULT_DTYPE
+
+
+def _result_dtype(dtype):
+    """
+    The dtype a reduction's result should carry.
+
+    Preserving the input dtype keeps float64 graphs in float64, which is what
+    gradient checking needs. But integer dtypes cannot hold the running float
+    total these reductions accumulate, so they fall back to the default.
+    """
+    return _float_dtype(dtype)
+
+
+def _unbroadcast(grad: Tensor, original_shape: tuple[int, ...]) -> Tensor:
     """Sum grad along dimensions that were broadcast to match original_shape."""
     from forge.tensor import Tensor
     import array as _arr
@@ -69,107 +108,152 @@ def _unbroadcast(grad: "Tensor", original_shape: tuple[int, ...]) -> "Tensor":
     return result
 
 class Add(Function):
-    def forward(self, a: "Tensor", b: "Tensor") -> "Tensor":
+    def forward(self, a: Tensor, b: Tensor) -> Tensor:
         self.inputs = [a, b]
         self.save_for_backward(a, b)
         from forge.tensor import _broadcast_shape, _broadcast_data, Tensor
 
+        out_dtype = _promote_dtype(a.dtype, b.dtype)
         result_shape = _broadcast_shape(a.shape, b.shape)
-        data_a = _broadcast_data(a._data, a.shape, result_shape, a.dtype.typecode)
-        data_b = _broadcast_data(b._data, b.shape, result_shape, b.dtype.typecode)
+        data_a = _broadcast_data(a._data, a.shape, result_shape, out_dtype.typecode)
+        data_b = _broadcast_data(b._data, b.shape, result_shape, out_dtype.typecode)
 
-        new_data = _array.array(a.dtype.typecode, [x + y for x, y in zip(data_a, data_b)])
+        new_data = _array.array(out_dtype.typecode, [x + y for x, y in zip(data_a, data_b)])
         result = Tensor.__new__(Tensor)
         result._data = new_data
         result.shape = result_shape
-        result.dtype = a.dtype
+        result.dtype = out_dtype
         result.requires_grad = False
         result.grad = None
         result._grad_fn = None
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         a, b = self.saved_tensors
         grad_a = _unbroadcast(grad_output, a.shape)
         grad_b = _unbroadcast(grad_output, b.shape)
         return grad_a, grad_b
 
 class Sub(Function):
-    def forward(self, a: "Tensor", b: "Tensor") -> "Tensor":
+    def forward(self, a: Tensor, b: Tensor) -> Tensor:
         self.inputs = [a, b]
         self.save_for_backward(a, b)
         from forge.tensor import _broadcast_shape, _broadcast_data, Tensor
 
+        out_dtype = _promote_dtype(a.dtype, b.dtype)
         result_shape = _broadcast_shape(a.shape, b.shape)
-        data_a = _broadcast_data(a._data, a.shape, result_shape, a.dtype.typecode)
-        data_b = _broadcast_data(b._data, b.shape, result_shape, b.dtype.typecode)
+        data_a = _broadcast_data(a._data, a.shape, result_shape, out_dtype.typecode)
+        data_b = _broadcast_data(b._data, b.shape, result_shape, out_dtype.typecode)
 
-        new_data = _array.array(a.dtype.typecode, [x - y for x, y in zip(data_a, data_b)])
+        new_data = _array.array(out_dtype.typecode, [x - y for x, y in zip(data_a, data_b)])
         result = Tensor.__new__(Tensor)
         result._data = new_data
         result.shape = result_shape
-        result.dtype = a.dtype
+        result.dtype = out_dtype
         result.requires_grad = False
         result.grad = None
         result._grad_fn = None
         return result
 
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         a, b = self.saved_tensors
         grad_a = _unbroadcast(grad_output, a.shape)
         grad_b = _unbroadcast(-grad_output, b.shape)
         return grad_a, grad_b
 
 class Mul(Function):
-    def forward(self, a: "Tensor", b: "Tensor") -> "Tensor":
+    def forward(self, a: Tensor, b: Tensor) -> Tensor:
         self.inputs = [a, b]
         self.save_for_backward(a, b)
         from forge.tensor import _broadcast_shape, _broadcast_data, Tensor
 
+        out_dtype = _promote_dtype(a.dtype, b.dtype)
         result_shape = _broadcast_shape(a.shape, b.shape)
-        data_a = _broadcast_data(a._data, a.shape, result_shape, a.dtype.typecode)
-        data_b = _broadcast_data(b._data, b.shape, result_shape, b.dtype.typecode)
+        data_a = _broadcast_data(a._data, a.shape, result_shape, out_dtype.typecode)
+        data_b = _broadcast_data(b._data, b.shape, result_shape, out_dtype.typecode)
 
-        new_data = _array.array(a.dtype.typecode, [x * y for x, y in zip(data_a, data_b)])
+        new_data = _array.array(out_dtype.typecode, [x * y for x, y in zip(data_a, data_b)])
         result = Tensor.__new__(Tensor)
         result._data = new_data
         result.shape = result_shape
-        result.dtype = a.dtype
+        result.dtype = out_dtype
         result.requires_grad = False
         result.grad = None
         result._grad_fn = None
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         a, b = self.saved_tensors
         grad_a = _unbroadcast(grad_output * b, a.shape)
         grad_b = _unbroadcast(grad_output * a, b.shape)
         return grad_a, grad_b
 
 class Pow(Function):
-    def forward(self, a: "Tensor", exp: int | float) -> "Tensor":
+    def forward(self, a: Tensor, exp: int | float) -> Tensor:
         self.inputs = [a]
         self.exp = exp
         self.save_for_backward(a)
         from forge.tensor import Tensor
 
-        new_data = _array.array(a.dtype.typecode, [x ** exp for x in a._data])
+        # A negative or fractional exponent takes integers out of the integers
+        # (2 ** -1 is 0.5), and an integer array cannot hold that.
+        out_dtype = a.dtype
+        if not (isinstance(exp, int) and exp >= 0):
+            out_dtype = _float_dtype(a.dtype)
+
+        new_data = _array.array(out_dtype.typecode, [x ** exp for x in a._data])
         result = Tensor.__new__(Tensor)
         result._data = new_data
         result.shape = a.shape
-        result.dtype = a.dtype
+        result.dtype = out_dtype
         result.requires_grad = False
         result.grad = None
         result._grad_fn = None
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         a = self.saved_tensors[0]
         return (grad_output * self.exp * (a ** (self.exp - 1)),)
 
+class Div(Function):
+    """
+    True division, a / b.
+
+    Its own op rather than `a * b ** -1`: taking a reciprocal first rounds
+    twice, and it cannot express an integer division whose result is a float.
+    """
+
+    def forward(self, a: Tensor, b: Tensor) -> Tensor:
+        self.inputs = [a, b]
+        self.save_for_backward(a, b)
+        from forge.tensor import _broadcast_shape, _broadcast_data, Tensor
+
+        # True division never lands back in the integers, so int operands
+        # promote to float before the divide.
+        out_dtype = _float_dtype(_promote_dtype(a.dtype, b.dtype))
+        result_shape = _broadcast_shape(a.shape, b.shape)
+        data_a = _broadcast_data(a._data, a.shape, result_shape, out_dtype.typecode)
+        data_b = _broadcast_data(b._data, b.shape, result_shape, out_dtype.typecode)
+
+        new_data = _array.array(out_dtype.typecode, [x / y for x, y in zip(data_a, data_b)])
+        result = Tensor.__new__(Tensor)
+        result._data = new_data
+        result.shape = result_shape
+        result.dtype = out_dtype
+        result.requires_grad = False
+        result.grad = None
+        result._grad_fn = None
+        return result
+
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
+        a, b = self.saved_tensors
+        grad_a = _unbroadcast(grad_output / b, a.shape)
+        grad_b = _unbroadcast(-grad_output * a / (b * b), b.shape)
+        return grad_a, grad_b
+
 class Neg(Function):
-    def forward(self, a: "Tensor") -> "Tensor":
+    def forward(self, a: Tensor) -> Tensor:
         self.inputs = [a]
         from forge.tensor import Tensor
 
@@ -183,11 +267,11 @@ class Neg(Function):
         result._grad_fn = None
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         return (-grad_output,)
 
 class Sum(Function):
-    def forward(self, a: "Tensor") -> "Tensor":
+    def forward(self, a: Tensor) -> Tensor:
         self.inputs = [a]
         self.save_for_backward(a)
         from forge.tensor import Tensor
@@ -196,10 +280,13 @@ class Sum(Function):
         for x in a._data:
             total += x
 
-        result = Tensor(total)
+        # Preserve the input's dtype. Tensor(total) would apply the default,
+        # silently ending a float64 graph in a float32 scalar and breaking
+        # gradient checking.
+        result = Tensor(total, dtype=_result_dtype(a.dtype))
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         a = self.saved_tensors[0]
         from forge.tensor import Tensor
 
@@ -220,7 +307,7 @@ class Sum(Function):
         return (result,)
 
 class Mean(Function):
-    def forward(self, a: "Tensor") -> "Tensor":
+    def forward(self, a: Tensor) -> Tensor:
         self.inputs = [a]
         self.save_for_backward(a)
         from forge.tensor import Tensor
@@ -233,10 +320,13 @@ class Mean(Function):
         for s in a.shape:
             numel *= s
 
-        result = Tensor(total / numel)
+        # Preserve the input's dtype. Tensor(total) would apply the default,
+        # silently ending a float64 graph in a float32 scalar and breaking
+        # gradient checking.
+        result = Tensor(total / numel, dtype=_result_dtype(a.dtype))
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         a = self.saved_tensors[0]
         from forge.tensor import Tensor
 
@@ -257,7 +347,7 @@ class Mean(Function):
         return (result,)
 
 class Relu(Function):
-    def forward(self, a: "Tensor") -> "Tensor":
+    def forward(self, a: Tensor) -> Tensor:
         self.inputs = [a]
         from forge.tensor import Tensor
         self.save_for_backward(a)
@@ -271,7 +361,7 @@ class Relu(Function):
         result._grad_fn = None
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         a = self.saved_tensors[0]
         from forge.tensor import Tensor
         mask = _array.array(a.dtype.typecode, [1.0 if x > 0 else 0.0 for x in a._data])
@@ -286,7 +376,7 @@ class Relu(Function):
         return (result,)
 
 class Transpose(Function):
-    def forward(self, a: "Tensor") -> "Tensor":
+    def forward(self, a: Tensor) -> Tensor:
         self.inputs = [a]
         from forge.tensor import Tensor
         if len(a.shape) != 2:
@@ -305,11 +395,11 @@ class Transpose(Function):
         result._grad_fn = None
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         return (grad_output.transpose(),)
 
 class Matmul(Function):
-    def forward(self, left: "Tensor", right: "Tensor") -> "Tensor":
+    def forward(self, left: Tensor, right: Tensor) -> Tensor:
             # Save the operands so backward() can compute their gradients later.
             self.inputs = [left, right]
             self.save_for_backward(left, right)
@@ -377,7 +467,7 @@ class Matmul(Function):
             result._grad_fn = None
             return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         a, b = self.saved_tensors
         grad_a = grad_output @ b.T
         grad_b = a.T @ grad_output
@@ -386,7 +476,7 @@ class Matmul(Function):
 # ReLU(x) = max(0, x)
 # d/dx(ReLU(x)) = 1 if x > 0 else 0
 class ReLU(Function): 
-    def forward(self, a: "Tensor") -> "Tensor":
+    def forward(self, a: Tensor) -> Tensor:
         self.inputs = [a]
         self.save_for_backward(a)
         from forge.tensor import Tensor
@@ -401,7 +491,7 @@ class ReLU(Function):
         result._grad_fn = None
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         a = self.saved_tensors[0]
         from forge.tensor import Tensor
 
@@ -420,12 +510,22 @@ class ReLU(Function):
 # Sigmoid(x) = 1 / (1 + e^(-x))
 # d/dx(Sigmoid(x)) = Sigmoid(x) * (1 - Sigmoid(x))
 class Sigmoid(Function):
-    def forward(self, a: "Tensor") -> "Tensor":
+    def forward(self, a: Tensor) -> Tensor:
         self.inputs = [a]
         from forge.tensor import Tensor
         import math
 
-        sig_data = _array.array(a.dtype.typecode, [1.0 / (1.0 + math.exp(-x)) for x in a._data])
+        def _sigmoid(value: float) -> float:
+            # Two branches, because exp overflows for large arguments of either
+            # sign. Both are algebraically the same sigmoid.
+            if value >= 0:
+                out = 1.0 / (1.0 + math.exp(-value))
+            else:
+                e = math.exp(value)
+                out = e / (1.0 + e)
+            return out
+
+        sig_data = _array.array(a.dtype.typecode, [_sigmoid(x) for x in a._data])
 
         result = Tensor.__new__(Tensor)
         result._data = sig_data
@@ -438,7 +538,7 @@ class Sigmoid(Function):
         self.save_for_backward(result)
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         sig = self.saved_tensors[0]
         from forge.tensor import Tensor
 
@@ -456,7 +556,7 @@ class Sigmoid(Function):
 # Tanh(x) = (e^x - e^(-x)) / (e^x + e^(-x))
 # d/dx(Tanh(x)) = 1 - Tanh(x)^2
 class Tanh(Function):
-    def forward(self, a: "Tensor") -> "Tensor":
+    def forward(self, a: Tensor) -> Tensor:
         self.inputs = [a]
         from forge.tensor import Tensor
         import math
@@ -474,7 +574,7 @@ class Tanh(Function):
         self.save_for_backward(result)
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         tanh_out = self.saved_tensors[0]
         from forge.tensor import Tensor
 
@@ -492,7 +592,7 @@ class Tanh(Function):
 # Log(x) = ln(x)
 # d/dx(Log(x)) = 1/x
 class Log(Function):
-    def forward(self, a: "Tensor") -> "Tensor":
+    def forward(self, a: Tensor) -> Tensor:
         self.inputs = [a]
         self.save_for_backward(a)
         from forge.tensor import Tensor
@@ -508,7 +608,7 @@ class Log(Function):
         result._grad_fn = None
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         a = self.saved_tensors[0]
         from forge.tensor import Tensor
 
@@ -524,7 +624,7 @@ class Log(Function):
         return (result,)
 
 class Clamp(Function):
-    def forward(self, a: "Tensor", min_val: float, max_val: float) -> "Tensor":
+    def forward(self, a: Tensor, min_val: float, max_val: float) -> Tensor:
         self.inputs = [a]
         self.min_val = min_val
         self.max_val = max_val
@@ -544,7 +644,7 @@ class Clamp(Function):
         result._grad_fn = None
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         a = self.saved_tensors[0]
         from forge.tensor import Tensor
 
@@ -560,7 +660,7 @@ class Clamp(Function):
         return (result,)
 
 class Softmax(Function):
-    def forward(self, a: "Tensor") -> "Tensor":
+    def forward(self, a: Tensor) -> Tensor:
         self.inputs = [a]
         from forge.tensor import Tensor
         import math
@@ -605,7 +705,7 @@ class Softmax(Function):
         self.save_for_backward(result)
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         softmax_out = self.saved_tensors[0]
         from forge.tensor import Tensor
 
@@ -638,7 +738,7 @@ class Softmax(Function):
         return (result,)
 
 class SelectBatch(Function):
-    def forward(self, x: "Tensor", b: int) -> "Tensor":
+    def forward(self, x: Tensor, b: int) -> Tensor:
         self.inputs = [x]
         self.b = b
         self.x_shape = x.shape
@@ -660,7 +760,7 @@ class SelectBatch(Function):
         
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         from forge.tensor import Tensor
 
         batch, seq, dim = self.x_shape
@@ -686,7 +786,7 @@ class RowMean(Function):
     Averages each row seperately.
     """
 
-    def forward(self, x: "Tensor") -> "Tensor":
+    def forward(self, x: Tensor) -> Tensor:
         self.inputs = [x]
         self.save_for_backward(x)
         
@@ -710,7 +810,7 @@ class RowMean(Function):
 
         return result
     
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         x = self.saved_tensors[0]
         
         from forge.tensor import Tensor
@@ -734,7 +834,7 @@ class RowMean(Function):
 
 # Required to get standard deviation from variance
 class Sqrt(Function):
-    def forward(self, x: "Tensor") -> "Tensor":
+    def forward(self, x: Tensor) -> Tensor:
         self.inputs = [x]
         from forge.tensor import Tensor
         import math
@@ -753,7 +853,7 @@ class Sqrt(Function):
         
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         sqrt_x = self.saved_tensors[0]
         from forge.tensor import Tensor
 
@@ -773,14 +873,17 @@ class Sqrt(Function):
         return (result,)
 
 class CausalMask(Function):
-    def forward(self, scores: "Tensor") -> "Tensor":
+    def forward(self, scores: Tensor) -> Tensor:
         self.inputs = [scores]
         from forge.tensor import Tensor
 
         rows, cols = scores.shape
         new_data = _array.array(scores.dtype.typecode, scores._data)
 
-        NEGINF = -1e50
+        # A large finite number, not -1e50 which overflows float32 to -inf,
+        # and not true -inf: softmax subtracts each row's maximum, and
+        # -inf minus -inf is NaN.
+        NEGINF = -1e30
 
         for i in range(rows):
             for j in range(cols):
@@ -797,7 +900,7 @@ class CausalMask(Function):
 
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         from forge.tensor import Tensor
 
         rows, cols = grad_output.shape
@@ -823,7 +926,7 @@ class ConcatColumns(Function):
     Joins 2D tensors side by side: (rows, a) and (rows, b) -> (rows, a + b).
     """
 
-    def forward(self, x: "Tensor", *others: "Tensor") -> "Tensor":
+    def forward(self, x: Tensor, *others: Tensor) -> Tensor:
         from forge.tensor import Tensor
 
         tensors = [x, *others]
@@ -860,7 +963,7 @@ class ConcatColumns(Function):
 
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         from forge.tensor import Tensor
 
         rows, total_cols = grad_output.shape
@@ -889,7 +992,7 @@ class Gelu(Function):
     """
     gelu(x) = 0.5 * x * (1 + tanh(sqrt(2/pi) * (x + 0.044715 * x^3)))
     """
-    def forward(self, x: "Tensor") -> "Tensor":
+    def forward(self, x: Tensor) -> Tensor:
         self.inputs = [x]
         self.save_for_backward(x)
         from forge.tensor import Tensor
@@ -910,7 +1013,7 @@ class Gelu(Function):
         result._grad_fn = None
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         x = self.saved_tensors[0]
         from forge.tensor import Tensor
         import math
@@ -937,7 +1040,7 @@ class UnsqueezeBatch(Function):
     """
     Turns a (rows, cols) tensor into (1, rows, cols) tensor.
     """
-    def forward(self, x: "Tensor") -> "Tensor":
+    def forward(self, x: Tensor) -> Tensor:
         self.inputs = [x]
         self.x_shape = x.shape
         from forge.tensor import Tensor
@@ -951,7 +1054,7 @@ class UnsqueezeBatch(Function):
         result._grad_fn = None
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         from forge.tensor import Tensor
         result = Tensor.__new__(Tensor)
         result._data = _array.array(grad_output.dtype.typecode, grad_output._data)
@@ -966,7 +1069,7 @@ class Exp(Function):
     """
     Element-wise e^x.
     """
-    def forward(self, x: "Tensor") -> "Tensor":
+    def forward(self, x: Tensor) -> Tensor:
         self.inputs = [x]
         from forge.tensor import Tensor
         import math
@@ -985,7 +1088,7 @@ class Exp(Function):
 
         return result
     
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         exp_x = self.saved_tensors[0]
         from forge.tensor import Tensor
 
@@ -1010,7 +1113,7 @@ class FlattenBatch(Function):
 
     (batch, seq, dim)  ->  (batch * seq, dim)
     """
-    def forward(self, x: "Tensor") -> "Tensor":
+    def forward(self, x: Tensor) -> Tensor:
         self.inputs = [x]
         self._x_shape = x.shape
         from forge.tensor import Tensor
@@ -1029,7 +1132,7 @@ class FlattenBatch(Function):
         
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         from forge.tensor import Tensor
 
         result = Tensor.__new__(Tensor)
@@ -1050,13 +1153,17 @@ class UnflattenBatch(Function):
 
     (batch * seq, dim) -> (batch, seq, dim)
     """
-    def forward(self, x: "Tensor", batch: int) -> "Tensor":
+    def forward(self, x: Tensor, batch: int) -> Tensor:
         self.inputs = [x]
         from forge.tensor import Tensor
         
         self._x_shape = x.shape
 
         rows, dim = x.shape
+        if rows % batch != 0:
+            raise ValueError(
+                f"UnflattenBatch: {rows} rows do not divide evenly into "
+                f"{batch} sequences")
         seq = rows // batch
 
         new_data = _array.array(x.dtype.typecode, x._data)
@@ -1071,7 +1178,7 @@ class UnflattenBatch(Function):
         
         return result
     
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         from forge.tensor import Tensor
 
         result = Tensor.__new__(Tensor)
@@ -1090,7 +1197,7 @@ class StackBatch(Function):
     
         n tensors of (seq, dim) -> (n, seq, dim)
     """
-    def forward(self, *tensors: "Tensor") -> "Tensor":
+    def forward(self, *tensors: Tensor) -> Tensor:
         self.inputs = list(tensors)
         from forge.tensor import Tensor
 
@@ -1120,7 +1227,7 @@ class StackBatch(Function):
 
         return result
     
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         from forge.tensor import Tensor
         
         grads = []
@@ -1147,7 +1254,7 @@ class BatchedMatmul(Function):
     saves tensors for the backward pass, allocates a result
     Tensor and registers it in the graph. 
     """
-    def forward(self, left: "Tensor", right: "Tensor") -> "Tensor":
+    def forward(self, left: Tensor, right: Tensor) -> Tensor:
         self.inputs = [left, right]
         self.save_for_backward(left, right)
 
@@ -1157,7 +1264,7 @@ class BatchedMatmul(Function):
         from forge.autograd.accelerate_backend import ACCELERATE_AVAILABLE, accelerate_matmul
         from forge.dtype import float32
 
-        use_blas = ACCELERATE_AVAILABLE and left.dtype is float32 and right.dtype is float32
+        use_blas = ACCELERATE_AVAILABLE and left.dtype == float32 and right.dtype == float32
         
         if len(left.shape) != 3 or len(right.shape) != 3:
             raise ValueError("BatchedMatmul needs two 3D tensors.")
@@ -1204,7 +1311,7 @@ class BatchedMatmul(Function):
         
         return result
 
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         from forge.tensor import Tensor
         from forge.autograd.accelerate_backend import ACCELERATE_AVAILABLE, accelerate_matmul
         from forge.dtype import float32
@@ -1212,7 +1319,7 @@ class BatchedMatmul(Function):
         left, right = self.saved_tensors
         batch, m, k, n = self.dims
 
-        use_blas = ACCELERATE_AVAILABLE and left.dtype is float32 and right.dtype is float32
+        use_blas = ACCELERATE_AVAILABLE and left.dtype == float32 and right.dtype == float32
 
         grad_left = _array.array(left.dtype.typecode, [0.0] * (batch * m * k))
         grad_right = _array.array(right.dtype.typecode, [0.0] * (batch * k * n))
@@ -1280,7 +1387,7 @@ class BatchedCausalMask(Function):
     """
     MASK_VALUE = -1e30
 
-    def forward(self, x: "Tensor") -> "Tensor":
+    def forward(self, x: Tensor) -> Tensor:
         self.inputs = [x]
         from forge.tensor import Tensor
 
@@ -1305,7 +1412,7 @@ class BatchedCausalMask(Function):
         result._grad_fn = None
         return result
     
-    def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
+    def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
         """
         Masked entries were replaced by a constant, so they no longer depend on
         the input at all and their gradient is zero. Everything else passed

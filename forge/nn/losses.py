@@ -14,7 +14,7 @@ class MSELoss(Module):
     def __init__(self) -> None:
         super().__init__()
 
-    def forward(self, pred: "Tensor", target: "Tensor") -> "Tensor":
+    def forward(self, pred: Tensor, target: Tensor) -> Tensor:
         diff = pred - target
         return (diff * diff).mean()
 
@@ -27,7 +27,7 @@ class BCELoss(Module):
     def __init__(self) -> None:
         super().__init__()
 
-    def forward(self, pred: "Tensor", target: "Tensor") -> "Tensor":
+    def forward(self, pred: Tensor, target: Tensor) -> Tensor:
         from forge.tensor import Tensor
         eps = 1e-7
         pred_clamped = pred.clamp(eps, 1 - eps)
@@ -44,7 +44,7 @@ class CrossEntropyLoss(Module):
     def __init__(self) -> None:
         super().__init__()
 
-    def forward(self, pred: "Tensor", target) -> "Tensor":
+    def forward(self, pred: Tensor, target) -> Tensor:
         from forge.tensor import Tensor
         from forge.autograd.engine import Function
         import math
@@ -108,14 +108,28 @@ class CrossEntropyLoss(Module):
 
         # Create a proper grad_fn so backward() can find pred
         class _CEBackward(Function):
-            def __init__(self, pred: "Tensor", grad_for_pred: "Tensor") -> None:
+            def __init__(self, pred: Tensor, grad_for_pred: Tensor) -> None:
                 super().__init__()
                 self.inputs = [pred]
                 self.saved_grad = grad_for_pred
 
-            def backward(self, grad_output: "Tensor") -> tuple["Tensor", ...]:
-                # grad_output is 1.0 (scalar), so just return the precomputed gradient
-                return (self.saved_grad,)
+            def backward(self, grad_output: Tensor) -> tuple[Tensor, ...]:
+                # grad_output is not always 1. Anything that consumes the loss,
+                # such as a weighted sum of several losses, scales it. Ignoring
+                # it breaks the chain rule for everything downstream.
+                from forge.tensor import Tensor
+                import array as _arr
+
+                scale = grad_output._data[0]
+                scaled = Tensor.__new__(Tensor)
+                scaled._data = _arr.array(self.saved_grad.dtype.typecode,
+                                          [v * scale for v in self.saved_grad._data])
+                scaled.shape = self.saved_grad.shape
+                scaled.dtype = self.saved_grad.dtype
+                scaled.requires_grad = False
+                scaled.grad = None
+                scaled._grad_fn = None
+                return (scaled,)
 
         # Building the result tensor
         result = Tensor.__new__(Tensor)

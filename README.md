@@ -151,7 +151,7 @@ The ordinary call has the Black-Scholes closed form
 
 $$C = S_0\Phi(d_1) - K e^{-rT}\Phi(d_2), \qquad d_{1,2} = \frac{\ln(S_0/K) + \left(r \pm \tfrac{1}{2}\sigma^{2}\right)T}{\sigma\sqrt{T}}$$
 
-with $\Phi$ the standard normal CDF. The implementation satisfies put-call parity, $C - P = S_0 - Ke^{-rT}$, to machine precision, which is an independent check that does not rely on the simulation at all.
+with $\Phi$ the standard normal CDF.
 
 **The exotics.** These depend on the whole path $\lbrace S_{t_1},\dots,S_{t_m} \rbrace$ rather than only $S_T$, which is why closed forms largely stop existing. The arithmetic and geometric Asian payoffs are
 
@@ -253,7 +253,7 @@ from forge.nn import CrossEntropyLoss
 from forge.optim import Adam
 
 model = GPT(vocab_size=65, embed_dim=128, num_heads=4,
-            ff_dim=256, num_layers=4, seq_len=32)
+            ff_dim=256, num_layers=4, seq_len=4)
 criterion = CrossEntropyLoss()
 optimizer = Adam(model.parameters(), lr=0.002)
 
@@ -285,7 +285,7 @@ Prints the convergence table and writes `prices.png`.
 
 ```bash
 python -m forge.compiler.build
-python forge/compiler/benchmark.py
+python tools/benchmark.py
 ```
 
 ---
@@ -528,7 +528,7 @@ The lesson is that reflected operators are the one place where writing the obvio
 
 The core library is pure Python, so it is orders of magnitude slower than a production framework. That is the point of the exercise, but it is worth stating plainly.
 
-The GPT processes one sequence at a time. Batching was implemented and verified but is not in this branch.
+The GPT accepts a batch of sequences. Attention loops over the batch, while every other layer flattens it away, so the gain is correctness and gradient averaging rather than a large speed-up.
 
 The compiler handles the forward pass over six operations, with no autograd. Only matmul is threaded; the element-wise kernels are single-threaded, which is fine because they are memory-bound rather than compute-bound.
 
@@ -569,7 +569,9 @@ forge/
     compiled_run.py       compiled plan execution
     kernels.c             hand-written C kernels, including blocked matmul
     build.py              builds kernels.so
-    benchmark.py          performance measurement
+
+tools/
+  benchmark.py            performance measurement
 
 sidequests/
   shakespeare/

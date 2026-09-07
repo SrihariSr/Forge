@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from forge.nn.module import Module
 
-def save_model(model: "Module", filepath: str) -> None:
+def save_model(model: Module, filepath: str) -> None:
     """Save a model's parameters to a file"""
     state = model.state_dict()
 
@@ -28,7 +28,7 @@ def save_model(model: "Module", filepath: str) -> None:
     print(f"  Total values: {total}")
 
 
-def load_model(model: "Module", filepath: str) -> None:
+def load_model(model: Module, filepath: str) -> None:
     # Load parameters from a file into a model
     from forge.tensor import Tensor
     from forge.dtype import float32, float64, int32, int64

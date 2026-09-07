@@ -11,7 +11,7 @@ class Optimizer:
     """Base class for all optimizers."""
 
     # lr = learning rate
-    def __init__(self, parameters: Iterable["Tensor"], lr: float = 0.01) -> None:
+    def __init__(self, parameters: Iterable[Tensor], lr: float = 0.01) -> None:
         self.parameters = list(parameters)
         self.lr = lr
 
@@ -25,7 +25,7 @@ class Optimizer:
 class SGD(Optimizer):
     # Stochastic Gradient Descent
 
-    def __init__(self, parameters: Iterable["Tensor"], lr: float = 0.01, momentum: float = 0.0) -> None:
+    def __init__(self, parameters: Iterable[Tensor], lr: float = 0.01, momentum: float = 0.0) -> None:
         super().__init__(parameters, lr)
         self.momentum = momentum
         self.velocities = []
@@ -48,7 +48,7 @@ class SGD(Optimizer):
 class Adam(Optimizer):
     # Adam optimizer
 
-    def __init__(self, parameters: Iterable["Tensor"], lr: float = 0.001, beta1: float = 0.9, beta2: float = 0.999, eps: float = 1e-8) -> None:
+    def __init__(self, parameters: Iterable[Tensor], lr: float = 0.001, beta1: float = 0.9, beta2: float = 0.999, eps: float = 1e-8) -> None:
         super().__init__(parameters, lr)
         self.beta1 = beta1
         self.beta2 = beta2
