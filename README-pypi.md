@@ -75,7 +75,9 @@ optimizer.step()
 
 **A decoder-only transformer.** Multi-head causal self-attention, LayerNorm, GELU, learned positional encoding and pre-norm residual blocks, all built on the autograd engine above and gradient-checked individually.
 
-**Hardware backends.** Matrix multiplication dispatches to the Apple Metal GPU, to Apple Accelerate BLAS on the CPU, or to a pure Python fallback, chosen by problem size.
+**Hardware backends.** Matrix multiplication dispatches to the Apple Metal GPU, an NVIDIA GPU through cuBLAS, an AMD GPU through rocBLAS, Apple Accelerate BLAS on the CPU, or a pure Python fallback, chosen by what the machine has and by problem size.
+
+**Hand-written GPU kernels.** Three matrix multiply kernels in CUDA and the same three in HIP: naive, shared-memory tiled, and register blocked, benchmarked against the vendor libraries.
 
 **A deep learning compiler.** Builds a graph, plans which operations can share one pass over memory, generates C for each group, compiles it with gcc, and loads it back through ctypes while the program runs.
 
@@ -140,6 +142,18 @@ How the matmul got there, with the same arithmetic throughout:
 
 Against Apple Accelerate, called through NumPy on the same machine, at 768 x 768: 234 GFLOPS against 351, a gap of 1.5x.
 
+Three matrix multiply kernels written from scratch in CUDA, measured on a Tesla T4:
+
+| Size | Naive | Tiled | Register blocked | cuBLAS | Blocked GFLOPS | cuBLAS faster by |
+|---|---|---|---|---|---|---|
+| 512 x 512 | 0.72ms | 0.46ms | 0.15ms | 0.08ms | 1790 | 1.9x |
+| 1024 x 1024 | 5.32ms | 2.76ms | 0.79ms | 0.42ms | 2718 | 1.9x |
+| 2048 x 2048 | 41.70ms | 27.01ms | 7.30ms | 3.90ms | 2353 | 1.9x |
+
+Tiling gave 1.5x by moving reads from global to shared memory. Register blocking gave a further 3.7x by changing the ratio: each thread computes a 4 x 4 patch, so eight reads feed sixteen multiply-accumulates instead of two feeding one. The remaining gap to cuBLAS is mostly tensor cores, which plain CUDA cannot address.
+
+Routed through the library rather than run standalone, every call copies both inputs to the GPU and the result back. At 2048 x 2048 that takes the 3.90ms multiply to 26.54ms in total, so the copying costs nearly seven times the arithmetic. The penalty shrinks as matrices grow, because the multiply scales with the cube of the size while the data only scales with the square.
+
 A 550,977-parameter GPT trained on the tinyshakespeare corpus with data-parallel training across 8 CPU cores brought character-level cross-entropy from 3.66 to 1.44 over 33,113 steps.
 
 ---
@@ -150,7 +164,11 @@ The core library is pure Python, hence it is slower than a production framework.
 
 The compiler handles the forward pass over six operations, with no autograd. Only matmul is threaded; the element-wise kernels are single-threaded, which is fine because they are memory-bound rather than compute-bound.
 
-Metal and Accelerate backends require macOS and PyObjC. If not available, it defaults to pure Python.
+Metal and Accelerate require macOS and PyObjC. Everything falls back to pure Python where a backend is unavailable.
+
+The AMD path is untested. The ROCm backend and the HIP kernels were written and logic-checked but have never run on AMD hardware. The CUDA equivalents are verified on a Tesla T4, and HIP is close enough to CUDA that the port is mechanical, but that is an argument rather than evidence. Reports from anyone with an AMD GPU are welcome.
+
+Every GPU backend copies data to the device and back on every call, so tensors do not stay resident between operations. That is the largest inefficiency in the GPU path and the reason the dispatch threshold has to be as high as it is.
 
 ---
 

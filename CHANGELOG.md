@@ -1,28 +1,18 @@
 # Changelog
 
-## 0.1.0
+## 0.3.0
 
-First release.
+CUDA backend. Matrix multiplication dispatches to cuBLAS on machines with an
+NVIDIA GPU, alongside the existing Metal and Accelerate backends. Verified on
+an NVIDIA Tesla T4.
 
-## 0.1.1
+ROCm backend. The same through rocBLAS on AMD hardware. Untested: written and
+logic-checked, but never run on an AMD GPU.
 
-Package rename from `forge-ml` to `forge-dl`.
-
-## 0.2.0
-
-Batching. The GPT, attention, Linear, LayerNorm and CrossEntropyLoss now
-accept 3D input of shape (batch, seq, features). Previously GPT.forward
-silently discarded every sequence but the first.
-
-New operations: FlattenBatch, UnflattenBatch, StackBatch, BatchedMatmul,
-BatchedCausalMask.
-
-Type annotations throughout the library.
-
-Fixed: a requires_grad typo in StackBatch, duplicate Sigmoid, Tanh and Add
-definitions where the first of each was dead code, SimpleAttention returning
-a Python list for batches larger than one, and a wrong return annotation in
-the compiler's code generator.
+NVIDIA/matmul.cu and AMD/matmul.hip: three hand-written matmul kernels each
+(naive, shared-memory tiled, register blocked). The CUDA register-blocked
+kernel reaches 2718 GFLOPS on a T4, within 1.9x of cuBLAS. The HIP versions
+are untested.
 
 ## 0.2.1
 
@@ -44,3 +34,30 @@ impossible to run.
 Documentation corrected: the quick-start example did not run, the repository
 layout listed a path that does not exist, and an unsupported claim about
 put-call parity was removed.
+
+## 0.2.0
+
+Batching. The GPT, attention, Linear, LayerNorm and CrossEntropyLoss now
+accept 3D input of shape (batch, seq, features). Previously GPT.forward
+silently discarded every sequence but the first.
+
+New operations: FlattenBatch, UnflattenBatch, StackBatch, BatchedMatmul,
+BatchedCausalMask.
+
+Type annotations throughout the library.
+
+Fixed: a requires_grad typo in StackBatch, duplicate Sigmoid, Tanh and Add
+definitions where the first of each was dead code, SimpleAttention returning
+a Python list for batches larger than one, and a wrong return annotation in
+the compiler's code generator.
+
+## 0.1.1
+
+Package rename from `forge-ml` to `forge-dl`.
+
+## 0.1.0
+
+First release.
+
+
+

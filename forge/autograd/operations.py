@@ -408,7 +408,8 @@ class Matmul(Function):
             from forge.dtype import float32
             from forge.autograd.mps_backend import MPS_AVAILABLE, mps_matmul, GPU_MIN_WORK
             from forge.autograd.accelerate_backend import ACCELERATE_AVAILABLE, accelerate_matmul
-
+            from forge.autograd.rocm_backend import ROCM_AVAILABLE, rocm_matmul
+            from forge.autograd.cuda_backend import CUDA_AVAILABLE, cuda_matmul
             # Matmul only handles 2D matrices.
             if len(left.shape) != 2 or len(right.shape) != 2:
                 raise ValueError("matmul only supports 2D tensors")
@@ -439,8 +440,20 @@ class Matmul(Function):
                     left._data, right._data, left_rows, shared_dim, right_cols
                 )
 
+            # Using an AMD GPU
+            elif both_float32 and ROCM_AVAILABLE and total_work >= GPU_MIN_WORK:
+                result_data = rocm_matmul(
+                    left._data, right._data, left_rows, shared_dim, right_cols
+                )
+            
+            # Using an NVIDIA GPU
+            elif both_float32 and CUDA_AVAILABLE and total_work >= GPU_MIN_WORK:
+                result_data = cuda_matmul(
+                    left._data, right._data, left_rows, shared_dim, right_cols
+                )
+            
+            # Accelerate CPU BLAS is faster for smaller matrices (almost no overhead)
             elif both_float32 and ACCELERATE_AVAILABLE:
-                # Smaller matrix: the CPU BLAS routine wins (almost no overhead).
                 result_data = accelerate_matmul(
                     left._data, right._data, left_rows, shared_dim, right_cols
                 )

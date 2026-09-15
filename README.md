@@ -19,7 +19,9 @@ No PyTorch, no TensorFlow, no NumPy in the core. Every operation, from the autog
 
 **A decoder-only transformer.** Multi-head causal self-attention, LayerNorm, GELU, learned positional encoding, and pre-norm residual blocks, all built on the autograd engine above and gradient-checked individually.
 
-**Hardware backends.** Matrix multiplication dispatches to the Apple Metal GPU, to Apple Accelerate BLAS on the CPU, or to a pure Python fallback, chosen by problem size.
+**Hardware backends.** Matrix multiplication dispatches to the Apple Metal GPU, an NVIDIA GPU through cuBLAS, an AMD GPU through rocBLAS, Apple Accelerate BLAS on the CPU, or a pure Python fallback, chosen by what the machine has and by problem size.
+
+**Hand-written GPU kernels.** Three matrix multiply kernels in CUDA and the same three in HIP: naive, shared-memory tiled, and register blocked, benchmarked against the vendor libraries.
 
 **A deep learning compiler.** A separate front end that builds a graph, plans operator fusion, generates C source, compiles it with gcc, and loads it back through ctypes.
 
@@ -215,6 +217,38 @@ Two things stand between the two numbers. A register-blocked micro-kernel, which
 
 ---
 
+### CUDA kernels
+
+Three matrix multiply kernels written from scratch in CUDA, measured on a Tesla T4. Every kernel is checked against a double-precision reference on six shapes, several of them non-square and not divisible by the tile size, before any timing is taken.
+
+| Size | Naive | Tiled | Register blocked | cuBLAS | Blocked GFLOPS | cuBLAS faster by |
+|---|---|---|---|---|---|---|
+| 512 x 512 | 0.72ms | 0.46ms | 0.15ms | 0.08ms | 1790 | 1.9x |
+| 1024 x 1024 | 5.32ms | 2.76ms | 0.79ms | 0.42ms | 2718 | 1.9x |
+| 2048 x 2048 | 41.70ms | 27.01ms | 7.30ms | 3.90ms | 2353 | 1.9x |
+
+**Tiling gave 1.5x.** The naive kernel reads every value from global memory, and sixteen threads in a row fetch the same value. Loading a 16 x 16 tile into shared memory once lets all 256 threads in a block read it from storage roughly a hundred times faster.
+
+**Register blocking gave a further 3.7x**, and it is the more interesting of the two because it changes the *ratio* rather than the speed of each access. Each thread computes a 4 x 4 patch of output instead of one element, so it reads four values from each tile and performs sixteen multiply-accumulates with them. Eight reads per sixteen multiplies instead of two per one, with the accumulators held in registers.
+
+The remaining 1.9x to cuBLAS is mostly tensor cores, which plain CUDA cannot address, plus double buffering and per-architecture tuning.
+
+Absolute figures on a shared Colab T4 varied by around 35% between runs. The ratios above held steady across all of them.
+
+### Through the library
+
+The same cuBLAS calls routed through Forge, which copies both inputs to the GPU and the result back on every call:
+
+| Size | GPU time | Total time | GFLOPS | Copying costs |
+|---|---|---|---|---|
+| 512 x 512 | 0.08ms | 1.37ms | 195 | 17.2x |
+| 1024 x 1024 | 0.42ms | 4.73ms | 454 | 11.3x |
+| 2048 x 2048 | 3.90ms | 26.54ms | 647 | 6.8x |
+
+At 512 x 512 the GPU path reaches 195 GFLOPS while Accelerate on a laptop CPU reaches around 270, so for small matrices the GPU is the wrong choice and the dispatcher has to know it.
+
+---
+
 ## Quick start
 
 ```bash
@@ -394,11 +428,13 @@ Matmul picks a path by problem size:
 
 | Condition | Backend |
 |---|---|
-| float32, above the work threshold | Apple Metal GPU, through MPSMatrixMultiplication |
-| float32, below it | Apple Accelerate BLAS, through cblas_sgemm |
+| float32, above the work threshold, macOS | Apple Metal GPU, through MPSMatrixMultiplication |
+| float32, above the work threshold, NVIDIA GPU | cuBLAS |
+| float32, above the work threshold, AMD GPU | rocBLAS |
+| float32, below the threshold | Apple Accelerate BLAS, through cblas_sgemm |
 | anything else | pure Python triple loop |
 
-The threshold exists because GPU dispatch has a fixed setup cost. For the small matrices in a character-level model, that cost is larger than the multiplication itself, so the GPU is slower than the CPU. The library measures the work and routes accordingly.
+The threshold exists because GPU dispatch has a fixed setup cost, and because every call copies both inputs to GPU memory and the result back. Measured on a Tesla T4, that copying costs between 4 and 15 times the multiplication itself, with the penalty shrinking as matrices grow: the multiply scales with $n^3$ while the data only scales with $n^2$. For the small matrices in a character-level model the GPU is therefore slower than the CPU, and the library measures the work and routes accordingly.
 
 ### The compiler
 
@@ -532,7 +568,11 @@ The GPT accepts a batch of sequences. Attention loops over the batch, while ever
 
 The compiler handles the forward pass over six operations, with no autograd. Only matmul is threaded; the element-wise kernels are single-threaded, which is fine because they are memory-bound rather than compute-bound.
 
-Metal and Accelerate backends require macOS and PyObjC. Everything falls back to pure Python elsewhere.
+Metal and Accelerate require macOS and PyObjC. Everything falls back to pure Python where a backend is unavailable.
+
+**The AMD path is untested.** `rocm_backend.py` and `AMD/matmul.hip` were written and logic-checked but have never run on AMD hardware, because I do not have access to any. The CUDA equivalents are verified on a Tesla T4, and HIP is close enough to CUDA that the port is mechanical, but that is an argument rather than evidence. If you have an AMD GPU, reports are welcome.
+
+Every GPU backend copies data to the device and back on every call, so tensors do not stay resident between operations. That is the single largest inefficiency in the GPU path and the reason the work threshold has to be as high as it is.
 
 ---
 
@@ -551,6 +591,8 @@ forge/
     fusion.py             graph-level Linear plus ReLU fusion
     mps_backend.py        Apple Metal GPU matmul
     accelerate_backend.py Apple Accelerate BLAS matmul
+    cuda_backend.py       NVIDIA matmul through cuBLAS
+    rocm_backend.py       AMD matmul through rocBLAS, untested
 
   nn/
     module.py             Module base class, parameter registration
@@ -570,18 +612,21 @@ forge/
     kernels.c             hand-written C kernels, including blocked matmul
     build.py              builds kernels.so
 
+NVIDIA/
+  matmul.cu               three CUDA matmul kernels, benchmarked against cuBLAS
+
+AMD/
+  matmul.hip              the same three kernels in HIP, untested
+
 tools/
-  benchmark.py            performance measurement
+  benchmark.py            compiler performance measurement
+  verify_threads.py       threaded matmul correctness
+  tune.c, tune.sh         block size and thread count tuning
 
 sidequests/
-  shakespeare/
-    train_shakespeare.py  data-parallel training across CPU cores
-    resume_shakespeare.py continue training from a checkpoint
-  pokemon/
-    pokemon_names.py      character-level name generation
-  options/
-    options.py            Black-Scholes, Monte Carlo, Asian and barrier pricing
-    price_report.py       convergence table and charts
+  shakespeare/            data-parallel character-level GPT training
+  pokemon/                character-level name generation
+  options/                Black-Scholes, Monte Carlo, Asian and barrier pricing
 ```
 
 ---
