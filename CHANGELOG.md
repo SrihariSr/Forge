@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+
+- Added `SME/sme_matmul.c`: a hand-written Arm SME FP32 matmul for Apple M4.
+  Output is bit-identical to Accelerate's `cblas_sgemm`. On an M4 Max
+  (macOS 27.0.1), timed alternately against Accelerate: 1.06x to 1.18x
+  faster from 1024 to 2048, 0.83x at 1000, 0.67x at 512. Build and verify:
+  `clang -O2 -mcpu=apple-m4 sme_matmul.c -o sme_matmul -framework Accelerate && ./sme_matmul verify`
+
 ## 0.3.0
 
 CUDA backend. Matrix multiplication dispatches to cuBLAS on machines with an
