@@ -8,7 +8,7 @@
 void add(const float* a, const float* b, float* out, int n){
     int i = 0;
 
-    for (; i + 4 <= n; i +=4 ){
+    for (; i + 4 <= n; i +=4 ) {
         float32x4_t va = vld1q_f32(a + i);
         float32x4_t vb = vld1q_f32(b + i);
         vst1q_f32(out + i, vaddq_f32(va, vb));
@@ -19,19 +19,19 @@ void add(const float* a, const float* b, float* out, int n){
     }
 }
 
-void sub(const float* a, const float* b, float* out, int n){
+void sub(const float* a, const float* b, float* out, int n) {
     for (int i = 0; i < n; i++){
         out[i] = a[i] - b[i];
     }
 }
 
-void mul(const float* a, const float* b, float* out, int n){
+void mul(const float* a, const float* b, float* out, int n) {
     for (int i = 0; i < n; i++){
         out[i] = a[i] * b[i];
     }
 }
 
-void relu(const float* x, float* out, int n){
+void relu(const float* x, float* out, int n) {
     float32x4_t zero = vdupq_n_f32(0.0f);
     int i = 0;
 
@@ -47,7 +47,7 @@ void relu(const float* x, float* out, int n){
     }
 }
 
-void exp_kernel(const float* x, float* out, int n){
+void exp_kernel(const float* x, float* out, int n) {
     for (int i = 0; i < n; i++){
         out[i] = expf(x[i]);
     }
@@ -60,7 +60,7 @@ do. more contigious work is better.
 Numbers are based on measurements on Apple M4 Max.
 */
 
-static int block_for(int m, int nthreads){
+static int block_for(int m, int nthreads) {
     int b = m / nthreads;
 
     // Below 32 the per-tile overhead starts to dominate the work
@@ -130,8 +130,7 @@ static void* matmul_worker(void* arg){
     return NULL;
 }
 
-void matmul(const float* restrict a, const float* restrict b,
-            float* restrict out, int m, int n, int p){
+void matmul(const float* restrict a, const float* restrict b, float* restrict out, int m, int n, int p) {
 
     // Zero once, here, before any thread starts.
     memset(out, 0, (size_t)m * p * sizeof(float));
@@ -164,7 +163,7 @@ void matmul(const float* restrict a, const float* restrict b,
     Slice slices[MAX_THREADS];
 
     int blocks_each = total_blocks / nthreads;
-    int leftover    = total_blocks % nthreads;
+    int leftover = total_blocks % nthreads;
 
     int next_block = 0;
     for (int t = 0; t < nthreads; t++){

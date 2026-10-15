@@ -24,3 +24,7 @@ transformer_weights.json
 watch_*
 .venv/
 *.egg-info/
+
+# SME build outputs
+SME/hello_sme
+SME/sme_matmul
